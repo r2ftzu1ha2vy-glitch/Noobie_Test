@@ -55,6 +55,8 @@
   #hud-room { position: absolute; top: 1.2rem; left: 1.2rem; font-size: 1rem; letter-spacing: .1em; text-shadow: 1px 1px 0 #000; }
   #hud-hint { position: absolute; bottom: 1.2rem; left: 50%; transform: translateX(-50%); font-size: .95rem; text-shadow: 1px 1px 0 #000; text-align: center; opacity: .9; }
   #hud-hint.hidden { display: none; }
+  #hud-prompt { position: absolute; bottom: 4.2rem; left: 50%; transform: translateX(-50%); font-size: 1.1rem; letter-spacing: .1em; background: rgba(18,13,8,.78); border: 3px double var(--paper); padding: .35rem 1rem; text-transform: uppercase; }
+  #hud-prompt.hidden { display: none; }
   #btn-leave { position: absolute; top: 1.1rem; right: 1.2rem; pointer-events: auto; min-width: 0; font-size: .95rem; padding: .45rem 1rem; }
 </style>
 </head>
@@ -109,7 +111,8 @@
   <div id="hud-room"></div>
   <div id="hud-msg" class="empty"></div>
   <button class="btn back" id="btn-leave">Leave</button>
-  <div id="hud-hint">Click to look around &middot; WASD move &middot; Space jump &middot; Esc frees the mouse</div>
+  <div id="hud-prompt" class="hidden"></div>
+  <div id="hud-hint">Click to look around &middot; WASD move &middot; Space jump &middot; E open doors &middot; Esc frees the mouse</div>
 </div>
 
 <div id="status"></div>
@@ -155,6 +158,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 class World {
   constructor() {
     this.proxies = [];
+    this.doorsPassable = false;
     this.ray = new THREE.Raycaster();
     this.mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
   }
@@ -169,6 +173,7 @@ class World {
       p.matrix.copy(o.matrixWorld);
       p.matrixWorld.copy(o.matrixWorld);
       p.userData.nm = new THREE.Matrix3().getNormalMatrix(o.matrixWorld);
+      p.userData.src = o;
       this.proxies.push(p);
     });
   }
@@ -179,7 +184,8 @@ class World {
     r.set(origin, dir);
     r.near = 0;
     r.far = far;
-    const list = r.intersectObjects(this.proxies, false);
+    let list = r.intersectObjects(this.proxies, false);
+    if (this.doorsPassable) list = list.filter((h) => !h.object.userData.door);
     for (const h of list) {
       h.normal = h.face.normal.clone().applyMatrix3(h.object.userData.nm).normalize();
     }
@@ -552,6 +558,16 @@ class NavSearch {
   }
 }
 
+// the bot opens doors on its own, so path planning treats openable doors as open
+for (const m of ["surf", "neighbors", "nearest"]) {
+  const orig = Nav.prototype[m];
+  Nav.prototype[m] = function (...a) {
+    const w = this.w, prev = w.doorsPassable;
+    w.doorsPassable = true;
+    try { return orig.apply(this, a); } finally { w.doorsPassable = prev; }
+  };
+}
+
 class Bot {
   constructor(world, nav) {
     this.world = world;
@@ -632,7 +648,7 @@ class LocalTransport {
     this.ch = new BroadcastChannel('noobie-rooms-v1');
     this.ch.onmessage = (e) => this._msg(e.data);
     this.room = null;
-    this.h = { room: [], start: [], state: [], closed: [] };
+    this.h = { room: [], start: [], state: [], closed: [], door: [] };
     this.pending = new Map();
     this.timer = null;
   }
@@ -751,6 +767,9 @@ class LocalTransport {
       case 'state':
         if (r && r.code === m.room && m.from !== this.id) this._emit('state', m.from, m.s);
         break;
+      case 'door':
+        if (r && r.code === m.room && m.from !== this.id) this._emit('door', m.i, m.v);
+        break;
     }
   }
 
@@ -776,6 +795,11 @@ class LocalTransport {
     this._post({ t: 'state', room: this.room.code, from: this.id, s });
   }
 
+  sendDoor(i, v) {
+    if (!this.room) return;
+    this._post({ t: 'door', room: this.room.code, from: this.id, i, v });
+  }
+
   _clear() { clearInterval(this.timer); this.timer = null; this.room = null; }
 
   leave() {
@@ -788,6 +812,215 @@ class LocalTransport {
 }
 
 
+// ---------------------------------------------------------------------
+//  Transport: Firebase Realtime Database (anonymous auth).
+//  rooms/{code}/meta     {hostId, phase, settings, hb}
+//  rooms/{code}/players  {uid: {id,name,color}}
+//  rooms/{code}/start    {nonce, payload}
+//  rooms/{code}/states   {uid|BOT: {x,y,z,yaw,anim,...}}
+//  rooms/{code}/doors    {index: -1|0|1}
+//  Rules: database.rules.json. Add ?local to the URL to use the
+//  same-browser LocalTransport instead.
+// ---------------------------------------------------------------------
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA_RnLpXjLGkTtIa840K1ESPIoYObAnlso",
+  authDomain: "noobie-1b6a0.firebaseapp.com",
+  databaseURL: "https://noobie-1b6a0-default-rtdb.firebaseio.com",
+  projectId: "noobie-1b6a0",
+  storageBucket: "noobie-1b6a0.firebasestorage.app",
+  messagingSenderId: "218040356745",
+  appId: "1:218040356745:web:83a6318b33e008e9249b58",
+  measurementId: "G-QR3XV2DZP3",
+};
+const FB_VER = "10.14.1";
+const ROOM_STALE_MS = 60000;
+
+class FirebaseTransport {
+  constructor() {
+    this.id = null;
+    this.h = { room: [], start: [], state: [], closed: [], door: [] };
+    this.code = null; this.isHost = false;
+    this.unsubs = []; this.hbTimer = null;
+    this.snap = { meta: null, players: {} };
+    this.lastStart = null; this.offset = 0; this.ready = null;
+    this.lastSend = new Map();
+  }
+
+  on(evt, cb) { this.h[evt].push(cb); }
+  _emit(evt, ...a) { for (const cb of this.h[evt]) cb(...a); }
+  _now() { return Date.now() + this.offset; }
+  _ref(path) { return this.fb.ref(this.db, path); }
+
+  _init() {
+    if (this.ready) return this.ready;
+    this.ready = (async () => {
+      const base = `https://www.gstatic.com/firebasejs/${FB_VER}`;
+      const [appM, dbM, authM] = await Promise.all([
+        import(`${base}/firebase-app.js`), import(`${base}/firebase-database.js`), import(`${base}/firebase-auth.js`),
+      ]);
+      this.fb = dbM;
+      const app = appM.initializeApp(FIREBASE_CONFIG);
+      this.db = dbM.getDatabase(app);
+      const cred = await authM.signInAnonymously(authM.getAuth(app));
+      this.id = cred.user.uid;
+      dbM.onValue(dbM.ref(this.db, ".info/serverTimeOffset"), (sn) => { this.offset = sn.val() || 0; });
+    })().catch((err) => {
+      this.ready = null;
+      console.error("Firebase init failed:", err);
+      if (err && err.code === "auth/operation-not-allowed") throw new Error("Enable Anonymous sign-in in Firebase Authentication.");
+      throw new Error("Could not reach Firebase.");
+    });
+    return this.ready;
+  }
+
+  _fail(err, fallback) {
+    console.error(err);
+    if (err && /permission_denied/i.test(String(err.code || err.message))) return new Error("Database rules rejected the request.");
+    return new Error(fallback);
+  }
+
+  _playerRef(id) { return this._ref(`rooms/${this.code}/players/${id}`); }
+
+  async _enter(info) {
+    const { set, onDisconnect } = this.fb;
+    const me = { id: this.id, name: info.name, color: info.color };
+    await set(this._playerRef(this.id), me);
+    onDisconnect(this._playerRef(this.id)).remove();
+    onDisconnect(this._ref(`rooms/${this.code}/states/${this.id}`)).remove();
+    this._listen();
+  }
+
+  async createRoom(info) {
+    await this._init();
+    const { get, set, remove, onDisconnect, serverTimestamp } = this.fb;
+    for (let i = 0; i < 25; i++) {
+      const code = String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+      const roomRef = this._ref(`rooms/${code}`);
+      try {
+        const cur = await get(this._ref(`rooms/${code}/meta`));
+        if (cur.exists()) {
+          if (this._now() - (cur.val().hb || 0) < ROOM_STALE_MS) continue;
+          await remove(roomRef);                      // abandoned room, reclaim the code
+        }
+        await set(this._ref(`rooms/${code}/meta`), {
+          hostId: this.id, phase: "lobby", settings: { noobie: "bot" }, hb: serverTimestamp(),
+        });
+      } catch (err) {
+        if (/permission_denied/i.test(String(err.code || err.message))) continue; // lost a race for this code
+        throw this._fail(err, "Could not create the room.");
+      }
+      this.code = code; this.isHost = true; this.lastStart = null;
+      onDisconnect(roomRef).remove();
+      this.hbTimer = setInterval(() => {
+        this.fb.update(this._ref(`rooms/${this.code}/meta`), { hb: serverTimestamp() }).catch(() => {});
+      }, 10000);
+      try { await this._enter(info); } catch (err) { this._teardown(); throw this._fail(err, "Could not create the room."); }
+      return code;
+    }
+    throw new Error("Could not allocate a room code");
+  }
+
+  async joinRoom(code, info) {
+    await this._init();
+    const { get } = this.fb;
+    let meta, players;
+    try {
+      meta = await get(this._ref(`rooms/${code}/meta`));
+      players = await get(this._ref(`rooms/${code}/players`));
+    } catch (err) { throw this._fail(err, "Could not reach the room."); }
+    const m = meta.val();
+    if (!m || this._now() - (m.hb || 0) > ROOM_STALE_MS) throw new Error("Room not found");
+    if (m.phase !== "lobby") throw new Error("Game already started");
+    if (players.exists() && Object.keys(players.val()).length >= CFG.maxPlayers) throw new Error("Room is full");
+    this.code = code; this.isHost = false; this.lastStart = null;
+    try { await this._enter(info); } catch (err) { this._teardown(); throw this._fail(err, "Could not join the room."); }
+    return code;
+  }
+
+  _listen() {
+    const { onValue, onChildAdded, onChildChanged } = this.fb;
+    const base = `rooms/${this.code}`;
+    const add = (u) => this.unsubs.push(u);
+    add(onValue(this._ref(`${base}/meta`), (sn) => {
+      const v = sn.val();
+      if (!v) { this._teardown(); this._emit("closed"); return; }
+      this.snap.meta = v; this._room();
+    }));
+    add(onValue(this._ref(`${base}/players`), (sn) => { this.snap.players = sn.val() || {}; this._room(); }));
+    add(onValue(this._ref(`${base}/start`), (sn) => {
+      const v = sn.val();
+      if (!v || v.nonce === this.lastStart) return;
+      this.lastStart = v.nonce;
+      if (!this.isHost) this._emit("start", v.payload);
+    }));
+    const onS = (sn) => {
+      if (sn.key === this.id || (sn.key === "BOT" && this.isHost)) return;
+      this._emit("state", sn.key, sn.val());
+    };
+    const states = this._ref(`${base}/states`);
+    add(onChildAdded(states, onS)); add(onChildChanged(states, onS));
+    const onD = (sn) => this._emit("door", Number(sn.key), sn.val());
+    const doors = this._ref(`${base}/doors`);
+    add(onChildAdded(doors, onD)); add(onChildChanged(doors, onD));
+  }
+
+  _room() {
+    const m = this.snap.meta;
+    if (!m) return;
+    this._emit("room", { code: this.code, hostId: m.hostId, phase: m.phase, settings: m.settings || { noobie: "bot" }, players: this.snap.players });
+  }
+
+  setSettings(patch) {
+    if (!this.code || !this.isHost) return;
+    this.fb.update(this._ref(`rooms/${this.code}/meta/settings`), patch).catch((e) => console.error(e));
+  }
+
+  async start(payload) {
+    if (!this.code || !this.isHost) return;
+    const { set, update, remove } = this.fb;
+    const nonce = Math.random().toString(36).slice(2);
+    try {
+      await remove(this._ref(`rooms/${this.code}/doors`));
+      await set(this._ref(`rooms/${this.code}/start`), { nonce, payload: JSON.parse(JSON.stringify(payload)) });
+      await update(this._ref(`rooms/${this.code}/meta`), { phase: "playing" });
+    } catch (err) { console.error(err); return; }
+    this.lastStart = nonce;
+    this._emit("start", payload);
+  }
+
+  sendState(s) {
+    if (!this.code) return;
+    const r = (n) => Math.round(n * 100) / 100;
+    const out = { ...s, x: r(s.x), y: r(s.y), z: r(s.z), yaw: r(s.yaw) };
+    this.fb.set(this._ref(`rooms/${this.code}/states/${s.id}`), out).catch(() => {});
+  }
+
+  sendDoor(i, v) {
+    if (!this.code) return;
+    this.fb.set(this._ref(`rooms/${this.code}/doors/${i}`), v).catch((e) => console.error(e));
+  }
+
+  _unsub() {
+    for (const u of this.unsubs) { try { u(); } catch (e) { /* already gone */ } }
+    this.unsubs = [];
+    clearInterval(this.hbTimer); this.hbTimer = null;
+  }
+
+  _teardown() { this._unsub(); this.code = null; this.isHost = false; this.snap = { meta: null, players: {} }; }
+
+  leave() {
+    if (!this.code) return;
+    const { remove } = this.fb;
+    const code = this.code, host = this.isHost, id = this.id;
+    this._teardown();
+    const jobs = host
+      ? [remove(this.fb.ref(this.db, `rooms/${code}`))]
+      : [remove(this.fb.ref(this.db, `rooms/${code}/states/${id}`)).then(() => remove(this.fb.ref(this.db, `rooms/${code}/players/${id}`)))];
+    Promise.all(jobs).catch((e) => console.error(e));
+  }
+}
+
+
 // =====================================================================
 //  CONFIG
 // =====================================================================
@@ -795,13 +1028,18 @@ const CONFIG = {
   menuModel: "./Main_Menu.glb",
   houseModel: "./House_Map.glb",
   roomModel: "./Noobie_Room.glb",
-  noobieModel: "./NoobiePlayer.glb",
+  noobieModel: "./Noobie.glb",
+  menuCameraName: "Camera", menuCamParallax: 0, // parallax: 0 = locked to the model's Camera
   orbitSpeed: 0.04, orbitRadiusScale: 1.6, cameraHeightScale: 0.35, parallax: 0.15,
   fov: 55, exposure: 1.1,
+  fogNear: 6, fogFar: 70,   // night: black fog
+  doorRange: 5,
+
   camDist: 13, camMin: 4, camMax: 30, mouseSens: 0.0025,
   netHz: 15,
   palette: ["#c0392b", "#2e86c1", "#27ae60", "#d4ac0d", "#8e44ad", "#e67e22", "#16a085", "#d35400"],
   debug: new URLSearchParams(location.search).has("debug"),
+  local: new URLSearchParams(location.search).has("local"),
 };
 
 const $ = (id) => document.getElementById(id);
@@ -878,6 +1116,10 @@ menuScene.add(menuSun);
 let menuMixer = null, menuReady = false, menuAngle = 0;
 const menuCenter = new THREE.Vector3();
 let menuRadius = 5, menuBaseH = 1;
+// A "Camera" object authored inside Main_Menu.glb. When present, the menu camera
+// sits exactly on it instead of orbiting the model.
+let menuCamObj = null;
+const _mcPos = new THREE.Vector3(), _mcQuat = new THREE.Quaternion(), _mcScale = new THREE.Vector3();
 
 loadGLB(CONFIG.menuModel, progress).then((gltf) => {
   const model = gltf.scene;
@@ -891,6 +1133,15 @@ loadGLB(CONFIG.menuModel, progress).then((gltf) => {
   menuCam.near = maxDim / 1000;
   menuCam.far = maxDim * 100;
   menuCam.updateProjectionMatrix();
+  menuCamObj = model.getObjectByName(CONFIG.menuCameraName) || null;
+  if (menuCamObj) {
+    menuCamObj.visible = false; // it is only a marker, don't render the placeholder
+    model.updateMatrixWorld(true);
+    // the marker's own bounding box must not skew the fallback orbit values
+    log("menu camera object found:", menuCamObj.name);
+  } else {
+    log("no", CONFIG.menuCameraName, "object in menu model, using orbit camera");
+  }
   if (gltf.animations && gltf.animations.length) {
     menuMixer = new THREE.AnimationMixer(model);
     gltf.animations.forEach((c) => menuMixer.clipAction(c).play());
@@ -935,8 +1186,7 @@ let net = null;          // transport, set when entering multiplayer
 let lobby = null;        // latest room state
 
 function createTransport() {
-  // Swap this one line for the Firebase transport later.
-  return new LocalTransport();
+  return CONFIG.local ? new LocalTransport() : new FirebaseTransport();
 }
 
 function ensureNet() {
@@ -945,6 +1195,7 @@ function ensureNet() {
   net.on("room", onRoomState);
   net.on("start", (payload) => beginGame(payload));
   net.on("state", onNetState);
+  net.on("door", (i, v) => { if (G) setDoor(G, i, v, false); else pendingDoors.set(i, v); });
   net.on("closed", () => {
     lobby = null;
     if (G) exitToMenu("The host closed the room.");
@@ -1007,7 +1258,7 @@ $("btn-start").addEventListener("click", () => {
   if (choice === "random") choice = players[Math.floor(Math.random() * players.length)].id;
   const noobie = (choice !== "bot" && lobby.players[choice]) ? { type: "player", id: choice } : { type: "bot" };
   if (noobie.type === "player" && players.length < 2) return;
-  net.start({ mode: "multiplayer", hostId: lobby.hostId, noobie, players });
+  Promise.resolve(net.start({ mode: "multiplayer", hostId: lobby.hostId, noobie, players })).catch((e) => console.error(e));
 });
 
 function onRoomState(state) {
@@ -1212,6 +1463,99 @@ class Entity {
 // =====================================================================
 //  GAME SESSION
 // =====================================================================
+
+// ---------------------------------------------------------------------
+//  Doors: meshes named "Door" swing open on a hinge (E to toggle).
+//  Coloured doors (Blue_Door, Gold_Door, ...) stay locked until keys exist.
+//  State per door: 0 closed, +1 / -1 open (the sign is the swing direction,
+//  chosen away from whoever opened it, so every client animates the same way).
+// ---------------------------------------------------------------------
+const DOOR_SWING = Math.PI / 2, DOOR_TIME = 0.55;
+const pendingDoors = new Map();
+const _dm = new THREE.Matrix4(), _dr = new THREE.Matrix4(), _dt = new THREE.Matrix4();
+
+function setupDoors(root, world) {
+  const doors = [], locked = [];
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    if (!o.isMesh || !/door\d*$/i.test(o.name)) return;
+    const box = new THREE.Box3().setFromObject(o);
+    const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+    if (!/^door\d*$/i.test(o.name)) { locked.push({ box }); return; }
+    const alongZ = sz.x < sz.z;
+    const proxy = world.proxies.find((p) => p.userData.src === o);
+    if (proxy) proxy.userData.door = true;       // the bot's pathing sees through doors it can open
+    o.matrixAutoUpdate = false;
+    doors.push({
+      obj: o, proxy, box, center: c, base: o.matrixWorld.clone(),
+      hinge: new THREE.Vector3(alongZ ? c.x : box.min.x, 0, alongZ ? box.min.z : c.z),
+      w: alongZ ? [0, 1] : [1, 0], n: alongZ ? [1, 0] : [0, 1],
+      target: 0, ang: 0,
+    });
+  });
+  return { doors, locked };
+}
+
+function poseDoor(d) {
+  _dr.makeRotationY(d.ang);
+  _dm.makeTranslation(d.hinge.x, 0, d.hinge.z).multiply(_dr).multiply(_dt.makeTranslation(-d.hinge.x, 0, -d.hinge.z)).multiply(d.base);
+  d.obj.matrix.copy(_dm); d.obj.matrixWorld.copy(_dm);
+  if (d.proxy) {
+    d.proxy.matrix.copy(_dm); d.proxy.matrixWorld.copy(_dm);
+    d.proxy.userData.nm.getNormalMatrix(_dm);
+  }
+}
+
+function setDoor(g, i, v, send) {
+  const d = g.doors[i];
+  if (!d) return;
+  v = v > 0 ? 1 : v < 0 ? -1 : 0;
+  if (d.target === v) return;
+  d.target = v;
+  if (send && g.online && net) net.sendDoor(i, v);
+}
+
+function updateDoors(g, dt) {
+  const step = (DOOR_SWING / DOOR_TIME) * dt;
+  for (const d of g.doors) {
+    const goal = d.target * DOOR_SWING;
+    if (d.ang === goal) continue;
+    d.ang += clamp(goal - d.ang, -step, step);
+    poseDoor(d);
+  }
+}
+
+// swing sign that moves the free end of the door away from point p
+function doorOpenSign(d, p) {
+  const side = Math.sign((p.x - d.center.x) * d.n[0] + (p.z - d.center.z) * d.n[1]) || 1;
+  const plus = d.w[1] * d.n[0] - d.w[0] * d.n[1];
+  return plus * side > 0 ? -1 : 1;
+}
+
+// horizontal distance from p to the closed door's footprint (Infinity if on another floor)
+function doorDist(box, p) {
+  if (p.y < box.min.y - 2 || p.y > box.max.y) return Infinity;
+  return Math.hypot(Math.max(box.min.x - p.x, 0, p.x - box.max.x), Math.max(box.min.z - p.z, 0, p.z - box.max.z));
+}
+
+function doorInteract(g, p) {
+  let best = -1, bd = CONFIG.doorRange;
+  g.doors.forEach((d, i) => { const k = doorDist(d.box, p); if (k < bd) { bd = k; best = i; } });
+  let lockedNear = false;
+  if (best < 0) for (const l of g.lockedDoors) if (doorDist(l.box, p) < bd) lockedNear = true;
+  const prompt = $("hud-prompt");
+  if (best >= 0) {
+    const d = g.doors[best];
+    prompt.textContent = `E: ${d.target ? "close" : "open"} door`;
+    prompt.classList.remove("hidden");
+    if (g.interactQueued) setDoor(g, best, d.target ? 0 : doorOpenSign(d, p), true);
+  } else if (lockedNear) {
+    prompt.textContent = "Locked";
+    prompt.classList.remove("hidden");
+  } else prompt.classList.add("hidden");
+  g.interactQueued = false;
+}
+
 let G = null;            // active session
 const keys = new Set();
 const cam = { yaw: Math.PI, pitch: 0.45, dist: CONFIG.camDist };
@@ -1241,10 +1585,14 @@ function buildSession(payload, a) {
   const online = payload.mode === "multiplayer" && !!net;
   const myId = online ? net.id : "me";
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0e0b08);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x6a6258, 1.5));
-  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-  const sun = new THREE.DirectionalLight(0xfff0d8, 1.3);
+  // night: black sky, black fog, faint moonlight, and a lamp that follows the local player
+  scene.background = new THREE.Color(0x000000);
+  scene.fog = new THREE.Fog(0x000000, CONFIG.fogNear, CONFIG.fogFar);
+  scene.add(new THREE.HemisphereLight(0x39477a, 0x05060a, 0.22));
+  scene.add(new THREE.AmbientLight(0x141a33, 0.3));
+  const lamp = new THREE.PointLight(0xffe6bd, 150, 50, 1.5);
+  scene.add(lamp);
+  const sun = new THREE.DirectionalLight(0x6f86c9, 0.3);
   sun.position.set(30, 80, 20);
   scene.add(sun);
 
@@ -1261,6 +1609,7 @@ function buildSession(payload, a) {
   const world = new World();
   world.addColliders(house, colliderFilter);
   world.addColliders(room, colliderFilter);
+  const doorSet = setupDoors(house, world);
 
   const roster = new Map(payload.players.map((p) => [p.id, p]));
   const noobieIsPlayer = payload.noobie.type === "player";
@@ -1275,7 +1624,10 @@ function buildSession(payload, a) {
     spawnIn: CFG.noobieDelay,       // seconds until Noobie appears (as last known)
     noobieLoose: false, looseMsgT: 0,
     bot: null, body: null, ent: null, jumpQueued: false, fellT: 0,
+    lamp, doors: doorSet.doors, lockedDoors: doorSet.locked, interactQueued: false,
   };
+  for (const [i, v] of pendingDoors) setDoor(G, i, v, false);
+  pendingDoors.clear();
 
   // local body
   const kind = iAmNoobie ? "noobie" : "survivor";
@@ -1362,6 +1714,8 @@ function exitToMenu(msg) {
   if (document.pointerLockElement) document.exitPointerLock();
   G = null;
   keys.clear();
+  pendingDoors.clear();
+  $("hud-prompt").classList.add("hidden");
   $("hud").classList.remove("on");
   $("ui").classList.remove("hidden");
   $("vignette").classList.remove("hidden");
@@ -1377,6 +1731,7 @@ window.addEventListener("keydown", (e) => {
   if (!G) return;
   if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
   if (e.code === "Space" && !e.repeat) G.jumpQueued = true;
+  if (e.code === "KeyE" && !e.repeat) G.interactQueued = true;
   keys.add(e.code);
 });
 window.addEventListener("keyup", (e) => keys.delete(e.code));
@@ -1454,8 +1809,14 @@ function updateGame(dt) {
         targets.push(p);
       }
       g.bot.update(dt, targets);
+      const bp = g.bot.body.pos;
+      g.doors.forEach((d, i) => { if (!d.target && doorDist(d.box, bp) < 3.5) setDoor(g, i, doorOpenSign(d, bp), true); });
     }
   }
+
+  // doors
+  doorInteract(g, body.pos);
+  updateDoors(g, dt);
 
   // visuals
   const my = g.ent;
@@ -1514,6 +1875,7 @@ function updateGame(dt) {
   let d = cam.dist;
   const hit = g.world.firstAny(pivot, dirv, cam.dist + 0.4);
   if (hit) d = clamp(hit.distance - 0.4, 0.8, cam.dist);
+  g.lamp.position.set(body.pos.x, body.pos.y + body.height + 1.5, body.pos.z);
   gameCam.position.copy(pivot).addScaledVector(dirv, d);
   gameCam.lookAt(pivot);
   const hideSelf = d < 1.6;
@@ -1543,7 +1905,19 @@ function tick() {
     if (G) renderer.render(G.scene, gameCam);
   } else {
     if (menuMixer) menuMixer.update(dt);
-    if (menuReady) {
+    if (menuReady && menuCamObj) {
+      // locked to the Camera object (follows it if the model animates it)
+      menuCamObj.updateWorldMatrix(true, false);
+      menuCamObj.matrixWorld.decompose(_mcPos, _mcQuat, _mcScale);
+      menuCam.position.copy(_mcPos);
+      menuCam.quaternion.copy(_mcQuat);
+      if (CONFIG.menuCamParallax) {
+        mouse.sx += (mouse.x - mouse.sx) * 0.05;
+        mouse.sy += (mouse.y - mouse.sy) * 0.05;
+        menuCam.rotateY(-mouse.sx * CONFIG.menuCamParallax);
+        menuCam.rotateX(-mouse.sy * CONFIG.menuCamParallax);
+      }
+    } else if (menuReady) {
       menuAngle += CONFIG.orbitSpeed * dt;
       mouse.sx += (mouse.x - mouse.sx) * 0.05;
       mouse.sy += (mouse.y - mouse.sy) * 0.05;
