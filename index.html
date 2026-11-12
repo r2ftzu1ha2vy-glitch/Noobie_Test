@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Main Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Rye&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f1e4c3;
+    --ink: #2a1e12;
+    --accent: #8b2f1a;
+    --font-body: "Special Elite", "Courier New", Courier, monospace;
+    --font-title: "Rye", "Special Elite", Georgia, serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,.65) 100%);
+  }
+  #ui {
+    position: fixed; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 2.2rem;
+    font-family: var(--font-body); color: var(--paper);
+  }
+  #title {
+    font-family: var(--font-title); font-size: clamp(2.4rem, 7vw, 5.5rem);
+    letter-spacing: .08em; text-align: center; color: var(--paper);
+    text-shadow: 3px 3px 0 var(--ink), 0 0 24px rgba(0,0,0,.7);
+  }
+  .panel { display: none; flex-direction: column; gap: 1rem; align-items: center; }
+  .panel.active { display: flex; animation: fade .35s ease-out; }
+  @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  button.btn {
+    font-family: var(--font-body); font-size: clamp(1.1rem, 2.4vw, 1.6rem);
+    min-width: 280px; padding: .75rem 2rem; cursor: pointer;
+    color: var(--ink); background: var(--paper);
+    border: 3px double var(--ink); letter-spacing: .15em; text-transform: uppercase;
+    box-shadow: 4px 4px 0 rgba(0,0,0,.6); transition: transform .1s, background .15s, color .15s, box-shadow .1s;
+  }
+  button.btn:hover, button.btn:focus-visible { background: var(--accent); color: var(--paper); outline: none; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 rgba(0,0,0,.6); }
+  button.btn:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+  button.btn.back { background: transparent; color: var(--paper); border-color: var(--paper); min-width: 180px; font-size: 1rem; box-shadow: none; }
+  button.btn.back:hover, button.btn.back:focus-visible { background: var(--paper); color: var(--ink); }
+  #loader {
+    position: fixed; inset: 0; background: #120d08; color: var(--paper);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+    font-family: var(--font-body); transition: opacity .6s; z-index: 10;
+  }
+  #loader.done { opacity: 0; pointer-events: none; }
+  #bar { width: 260px; height: 8px; border: 2px solid var(--paper); }
+  #bar > div { height: 100%; width: 0%; background: var(--paper); transition: width .15s; }
+  #status { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    font-family: var(--font-body); color: var(--paper); opacity: .8; font-size: .95rem; }
+  #debug { position: fixed; top: 8px; left: 8px; font: 12px monospace; color: #0f0; white-space: pre; display: none; }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="vignette"></div>
+
+<div id="ui">
+  <h1 id="title">Main Menu</h1>
+
+  <div class="panel active" id="panel-main">
+    <button class="btn" id="btn-play">Play</button>
+  </div>
+
+  <div class="panel" id="panel-mode">
+    <button class="btn" id="btn-single">Singleplayer</button>
+    <button class="btn" id="btn-multi">Multiplayer</button>
+    <button class="btn back" id="btn-back">Back</button>
+  </div>
+</div>
+
+<div id="status"></div>
+<div id="debug"></div>
+
+<div id="loader">
+  <div>Loading...</div>
+  <div id="bar"><div></div></div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+
+// ---------- Config ----------
+const CONFIG = {
+  modelPath: "./Main_Menu.glb",
+  orbitSpeed: 0.04,
+  orbitRadiusScale: 1.6,
+  cameraHeightScale: 0.35,
+  parallax: 0.15,
+  fov: 55,
+  exposure: 1.0,
+  debug: new URLSearchParams(location.search).has("debug"),
+};
+
+const log = (...a) => CONFIG.debug && console.log("[menu]", ...a);
+const $ = (id) => document.getElementById(id);
+
+// ---------- Game hooks ----------
+function startSingleplayer() {
+  log("singleplayer selected");
+  setStatus("Starting singleplayer...");
+  window.dispatchEvent(new CustomEvent("game:start", { detail: { mode: "singleplayer" } }));
+}
+function startMultiplayer() {
+  log("multiplayer selected");
+  setStatus("Opening multiplayer...");
+  window.dispatchEvent(new CustomEvent("game:start", { detail: { mode: "multiplayer" } }));
+}
+
+// ---------- UI ----------
+const panels = { main: $("panel-main"), mode: $("panel-mode") };
+function showPanel(name) {
+  for (const [k, el] of Object.entries(panels)) el.classList.toggle("active", k === name);
+  const first = panels[name].querySelector("button");
+  if (first) first.focus({ preventScroll: true });
+}
+let statusTimer = null;
+function setStatus(msg, ms = 2500) {
+  $("status").textContent = msg;
+  clearTimeout(statusTimer);
+  if (ms) statusTimer = setTimeout(() => ($("status").textContent = ""), ms);
+}
+
+$("btn-play").addEventListener("click", () => showPanel("mode"));
+$("btn-back").addEventListener("click", () => showPanel("main"));
+$("btn-single").addEventListener("click", startSingleplayer);
+$("btn-multi").addEventListener("click", startMultiplayer);
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && panels.mode.classList.contains("active")) showPanel("main");
+});
+
+// ---------- Renderer / scene ----------
+const canvas = $("scene");
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+} catch (err) {
+  console.error(err);
+  setStatus("WebGL is not available in this browser.", 0);
+  $("loader").classList.add("done");
+  throw err;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = CONFIG.exposure;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x120d08);
+const camera = new THREE.PerspectiveCamera(CONFIG.fov, 1, 0.01, 5000);
+
+scene.add(new THREE.HemisphereLight(0xfff1d6, 0x2a1e12, 1.1));
+const sun = new THREE.DirectionalLight(0xffe2b0, 2.0);
+sun.position.set(5, 8, 5);
+scene.add(sun);
+
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener("resize", resize);
+resize();
+
+// ---------- Load model ----------
+let mixer = null;
+let center = new THREE.Vector3();
+let radius = 5;
+let baseHeight = 1;
+let ready = false;
+
+const loader = new GLTFLoader();
+loader.load(
+  CONFIG.modelPath,
+  (gltf) => {
+    const model = gltf.scene;
+    scene.add(model);
+
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    box.getCenter(center);
+    const maxDim = Math.max(size.x, size.y, size.z) || 1;
+    radius = maxDim * CONFIG.orbitRadiusScale;
+    baseHeight = center.y + maxDim * CONFIG.cameraHeightScale;
+    camera.near = maxDim / 1000;
+    camera.far = maxDim * 100;
+    camera.updateProjectionMatrix();
+    log("model size", size, "center", center);
+
+    if (gltf.animations && gltf.animations.length) {
+      mixer = new THREE.AnimationMixer(model);
+      gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
+      log("playing", gltf.animations.length, "animation(s)");
+    }
+
+    ready = true;
+    $("loader").classList.add("done");
+  },
+  (evt) => {
+    if (evt.lengthComputable) $("bar").firstElementChild.style.width = `${(evt.loaded / evt.total) * 100}%`;
+  },
+  (err) => {
+    console.error("Model failed to load:", err);
+    $("loader").classList.add("done");
+    setStatus("Could not load Main_Menu.glb. Serve this page over http, with the file beside it.", 0);
+  }
+);
+
+// ---------- Parallax ----------
+const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
+window.addEventListener("pointermove", (e) => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = (e.clientY / window.innerHeight) * 2 - 1;
+});
+
+// ---------- Loop ----------
+const clock = new THREE.Clock();
+let angle = 0;
+const dbg = $("debug");
+if (CONFIG.debug) dbg.style.display = "block";
+
+function tick() {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (mixer) mixer.update(dt);
+
+  if (ready) {
+    angle += CONFIG.orbitSpeed * dt;
+    mouse.sx += (mouse.x - mouse.sx) * 0.05;
+    mouse.sy += (mouse.y - mouse.sy) * 0.05;
+    const a = angle + mouse.sx * CONFIG.parallax;
+    camera.position.set(
+      center.x + Math.sin(a) * radius,
+      baseHeight - mouse.sy * radius * CONFIG.parallax * 0.5,
+      center.z + Math.cos(a) * radius
+    );
+    camera.lookAt(center);
+  }
+
+  renderer.render(scene, camera);
+  if (CONFIG.debug) {
+    dbg.textContent = `dt ${(dt * 1000).toFixed(1)}ms\ncalls ${renderer.info.render.calls}\ntris ${renderer.info.render.triangles}`;
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
