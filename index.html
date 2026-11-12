@@ -18,45 +18,44 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
   #scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-  #vignette {
-    position: fixed; inset: 0; pointer-events: none;
-    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,.65) 100%);
-  }
-  #ui {
-    position: fixed; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 2.2rem;
-    font-family: var(--font-body); color: var(--paper);
-  }
-  #title {
-    font-family: var(--font-title); font-size: clamp(2.4rem, 7vw, 5.5rem);
-    letter-spacing: .08em; text-align: center; color: var(--paper);
-    text-shadow: 3px 3px 0 var(--ink), 0 0 24px rgba(0,0,0,.7);
-  }
+  #vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,.65) 100%); }
+  #ui { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2rem; font-family: var(--font-body); color: var(--paper); }
+  #ui.hidden, #vignette.hidden { display: none; }
+  #title { font-family: var(--font-title); font-size: clamp(2.4rem, 7vw, 5.5rem); letter-spacing: .08em; text-align: center; color: var(--paper); text-shadow: 3px 3px 0 var(--ink), 0 0 24px rgba(0,0,0,.7); }
   .panel { display: none; flex-direction: column; gap: 1rem; align-items: center; }
   .panel.active { display: flex; animation: fade .35s ease-out; }
   @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-  button.btn {
-    font-family: var(--font-body); font-size: clamp(1.1rem, 2.4vw, 1.6rem);
-    min-width: 280px; padding: .75rem 2rem; cursor: pointer;
-    color: var(--ink); background: var(--paper);
-    border: 3px double var(--ink); letter-spacing: .15em; text-transform: uppercase;
-    box-shadow: 4px 4px 0 rgba(0,0,0,.6); transition: transform .1s, background .15s, color .15s, box-shadow .1s;
-  }
-  button.btn:hover, button.btn:focus-visible { background: var(--accent); color: var(--paper); outline: none; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 rgba(0,0,0,.6); }
-  button.btn:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+  button.btn { font-family: var(--font-body); font-size: clamp(1.1rem, 2.4vw, 1.6rem); min-width: 280px; padding: .75rem 2rem; cursor: pointer; color: var(--ink); background: var(--paper); border: 3px double var(--ink); letter-spacing: .15em; text-transform: uppercase; box-shadow: 4px 4px 0 rgba(0,0,0,.6); transition: transform .1s, background .15s, color .15s, box-shadow .1s; }
+  button.btn:hover:not(:disabled), button.btn:focus-visible { background: var(--accent); color: var(--paper); outline: none; transform: translate(-2px,-2px); box-shadow: 6px 6px 0 rgba(0,0,0,.6); }
+  button.btn:active:not(:disabled) { transform: translate(3px,3px); box-shadow: 1px 1px 0 rgba(0,0,0,.6); }
+  button.btn:disabled { opacity: .45; cursor: not-allowed; }
   button.btn.back { background: transparent; color: var(--paper); border-color: var(--paper); min-width: 180px; font-size: 1rem; box-shadow: none; }
   button.btn.back:hover, button.btn.back:focus-visible { background: var(--paper); color: var(--ink); }
-  #loader {
-    position: fixed; inset: 0; background: #120d08; color: var(--paper);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
-    font-family: var(--font-body); transition: opacity .6s; z-index: 10;
-  }
+  input.field, select.field { font-family: var(--font-body); font-size: 1.2rem; padding: .55rem 1rem; min-width: 280px; text-align: center; color: var(--ink); background: var(--paper); border: 3px double var(--ink); letter-spacing: .1em; }
+  input.field.code { font-size: 2.2rem; letter-spacing: .5em; padding-left: 1.2rem; }
+  select.field { text-align-last: center; min-width: 220px; font-size: 1rem; }
+  .err { min-height: 1.4rem; color: #ff9a80; font-size: 1.05rem; text-shadow: 1px 1px 0 #000; text-align: center; }
+  .note { font-size: .95rem; opacity: .85; text-align: center; max-width: 26rem; text-shadow: 1px 1px 0 #000; }
+  #lobby-code { font-family: var(--font-title); font-size: clamp(2.6rem, 8vw, 4.6rem); letter-spacing: .25em; padding-left: .25em; text-shadow: 3px 3px 0 var(--ink); }
+  #lobby-list { list-style: none; min-width: 300px; background: rgba(18,13,8,.78); border: 3px double var(--paper); padding: .6rem 1rem; display: flex; flex-direction: column; gap: .35rem; }
+  #lobby-list li { display: flex; align-items: center; gap: .6rem; font-size: 1.1rem; }
+  #lobby-list .dot { width: .9rem; height: .9rem; border: 2px solid var(--ink); flex: none; }
+  #lobby-list .tag { margin-left: auto; font-size: .85rem; opacity: .8; letter-spacing: .1em; }
+  .row { display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; justify-content: center; }
+  #loader { position: fixed; inset: 0; background: #120d08; color: var(--paper); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; font-family: var(--font-body); transition: opacity .6s; z-index: 10; }
   #loader.done { opacity: 0; pointer-events: none; }
   #bar { width: 260px; height: 8px; border: 2px solid var(--paper); }
   #bar > div { height: 100%; width: 0%; background: var(--paper); transition: width .15s; }
-  #status { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%);
-    font-family: var(--font-body); color: var(--paper); opacity: .8; font-size: .95rem; }
-  #debug { position: fixed; top: 8px; left: 8px; font: 12px monospace; color: #0f0; white-space: pre; display: none; }
+  #status { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); font-family: var(--font-body); color: var(--paper); opacity: .9; font-size: .95rem; text-shadow: 1px 1px 0 #000; z-index: 5; text-align: center; }
+  #debug { position: fixed; top: 8px; left: 8px; font: 12px monospace; color: #0f0; white-space: pre; display: none; z-index: 6; }
+  #hud { position: fixed; inset: 0; pointer-events: none; display: none; font-family: var(--font-body); color: var(--paper); z-index: 4; }
+  #hud.on { display: block; }
+  #hud-msg { position: absolute; top: 1.2rem; left: 50%; transform: translateX(-50%); font-size: clamp(1.1rem, 2.6vw, 1.8rem); letter-spacing: .12em; text-transform: uppercase; background: rgba(18,13,8,.78); border: 3px double var(--paper); padding: .5rem 1.4rem; text-align: center; white-space: nowrap; }
+  #hud-msg.empty { display: none; }
+  #hud-room { position: absolute; top: 1.2rem; left: 1.2rem; font-size: 1rem; letter-spacing: .1em; text-shadow: 1px 1px 0 #000; }
+  #hud-hint { position: absolute; bottom: 1.2rem; left: 50%; transform: translateX(-50%); font-size: .95rem; text-shadow: 1px 1px 0 #000; text-align: center; opacity: .9; }
+  #hud-hint.hidden { display: none; }
+  #btn-leave { position: absolute; top: 1.1rem; right: 1.2rem; pointer-events: auto; min-width: 0; font-size: .95rem; padding: .45rem 1rem; }
 </style>
 </head>
 <body>
@@ -73,15 +72,51 @@
   <div class="panel" id="panel-mode">
     <button class="btn" id="btn-single">Singleplayer</button>
     <button class="btn" id="btn-multi">Multiplayer</button>
-    <button class="btn back" id="btn-back">Back</button>
+    <button class="btn back" id="btn-back-mode">Back</button>
   </div>
+
+  <div class="panel" id="panel-mp">
+    <input class="field" id="name-input" maxlength="14" placeholder="Your name" autocomplete="off" spellcheck="false">
+    <button class="btn" id="btn-create">Create Room</button>
+    <button class="btn" id="btn-join">Join Room</button>
+    <div class="err" id="mp-err"></div>
+    <button class="btn back" id="btn-back-mp">Back</button>
+  </div>
+
+  <div class="panel" id="panel-join">
+    <div class="note">Enter the 4 digit room code</div>
+    <input class="field code" id="code-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="0000" autocomplete="off">
+    <button class="btn" id="btn-join-go">Join</button>
+    <div class="err" id="join-err"></div>
+    <button class="btn back" id="btn-back-join">Back</button>
+  </div>
+
+  <div class="panel" id="panel-lobby">
+    <div class="note">Room code</div>
+    <div id="lobby-code">0000</div>
+    <ul id="lobby-list"></ul>
+    <div class="row" id="lobby-host">
+      <label for="noobie-select" class="note">Noobie is</label>
+      <select class="field" id="noobie-select"></select>
+    </div>
+    <div class="note" id="lobby-wait">Waiting for players to join...</div>
+    <button class="btn" id="btn-start">Start</button>
+    <button class="btn back" id="btn-leave-lobby">Leave</button>
+  </div>
+</div>
+
+<div id="hud">
+  <div id="hud-room"></div>
+  <div id="hud-msg" class="empty"></div>
+  <button class="btn back" id="btn-leave">Leave</button>
+  <div id="hud-hint">Click to look around &middot; WASD move &middot; Space jump &middot; Esc frees the mouse</div>
 </div>
 
 <div id="status"></div>
 <div id="debug"></div>
 
 <div id="loader">
-  <div>Loading...</div>
+  <div id="loader-text">Loading...</div>
   <div id="bar"><div></div></div>
 </div>
 
@@ -96,56 +131,686 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-// ---------- Config ----------
+
+
+// =====================================================================
+//  CORE: tuning, collision world, kinematic body, nav + bot, transport
+// =====================================================================
+const CFG = {
+  survivor: { speed: 12, radius: 1.0,  height: 5.0, stepUp: 1.5 },
+  noobie:   { speed: 9,  radius: 0.75, height: 3.4, stepUp: 1.1 },
+  gravity: 196.2,
+  jumpPower: 50,
+  noobieDelay: 30,
+  maxPlayers: 8,
+  spawn: { x: 0.1, z: 35.15 },
+  noobieRoom: { x: 0, y: 0.2, z: 0 },
+};
+
+const _o = new THREE.Vector3();
+const _d = new THREE.Vector3();
+const DOWN = new THREE.Vector3(0, -1, 0);
+const UP = new THREE.Vector3(0, 1, 0);
+
+class World {
+  constructor() {
+    this.proxies = [];
+    this.ray = new THREE.Raycaster();
+    this.mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+  }
+
+  addColliders(root, filter) {
+    root.updateMatrixWorld(true);
+    root.traverse((o) => {
+      if (!o.isMesh) return;
+      if (filter && !filter(o)) return;
+      const p = new THREE.Mesh(o.geometry, this.mat);
+      p.matrixAutoUpdate = false;
+      p.matrix.copy(o.matrixWorld);
+      p.matrixWorld.copy(o.matrixWorld);
+      p.userData.nm = new THREE.Matrix3().getNormalMatrix(o.matrixWorld);
+      this.proxies.push(p);
+    });
+  }
+
+  // all hits along a ray, nearest first, with world normals (not flipped)
+  hits(origin, dir, far) {
+    const r = this.ray;
+    r.set(origin, dir);
+    r.near = 0;
+    r.far = far;
+    const list = r.intersectObjects(this.proxies, false);
+    for (const h of list) {
+      h.normal = h.face.normal.clone().applyMatrix3(h.object.userData.nm).normalize();
+    }
+    return list;
+  }
+
+  // nearest hit of any kind, normal flipped to face the ray origin
+  firstAny(origin, dir, far) {
+    const list = this.hits(origin, dir, far);
+    if (!list.length) return null;
+    const h = list[0];
+    if (h.normal.dot(dir) > 0) h.normal.negate();
+    return h;
+  }
+
+  // nearest non-walkable (wall-like / ceiling-like) hit
+  firstWall(origin, dir, far) {
+    const list = this.hits(origin, dir, far);
+    for (const h of list) {
+      if (h.normal.dot(dir) > 0) h.normal.negate();
+      if (h.normal.y < 0.7) return h;
+    }
+    return null;
+  }
+
+  // highest upward-facing surface under (x,z) in [topY-far, topY]
+  groundY(x, topY, z, rad, far) {
+    let best = null;
+    const offs = [[0, 0], [rad, 0], [-rad, 0], [0, rad], [0, -rad]];
+    for (const [ox, oz] of offs) {
+      _o.set(x + ox, topY, z + oz);
+      const list = this.hits(_o, DOWN, far);
+      for (const h of list) {
+        if (h.normal.y >= 0.5) {
+          if (best === null || h.point.y > best) best = h.point.y;
+          break;
+        }
+      }
+    }
+    return best;
+  }
+
+  // lowest surface above (x,z) within far of fromY
+  ceilY(x, fromY, z, rad, far) {
+    let best = null;
+    const offs = [[0, 0], [rad, 0], [-rad, 0], [0, rad], [0, -rad]];
+    for (const [ox, oz] of offs) {
+      _o.set(x + ox, fromY, z + oz);
+      const h = this.firstAny(_o, UP, far);
+      if (h && (best === null || h.point.y < best)) best = h.point.y;
+    }
+    return best;
+  }
+
+  // slide a body horizontally, stopping at walls and sliding along them
+  slide(b, dx, dz) {
+    let rx = dx, rz = dz;
+    const R = b.radius;
+    const hs = [b.stepUp + 0.1, b.height * 0.5, b.height - 0.25];
+    const lat = [0, R * 0.75, -R * 0.75];
+    for (let it = 0; it < 3; it++) {
+      const len = Math.hypot(rx, rz);
+      if (len < 1e-5) return;
+      const ux = rx / len, uz = rz / len;
+      const px = -uz, pz = ux;
+      let best = Infinity, bn = null;
+      for (const h of hs) {
+        for (const l of lat) {
+          _o.set(b.pos.x + px * l, b.pos.y + h, b.pos.z + pz * l);
+          _d.set(ux, 0, uz);
+          const hit = this.firstWall(_o, _d, len + R);
+          if (!hit) continue;
+          const allowed = hit.distance - R;
+          if (allowed < best) { best = allowed; bn = hit.normal; }
+        }
+      }
+      if (bn === null || best >= len) {
+        b.pos.x += rx; b.pos.z += rz;
+        return;
+      }
+      const mv = Math.max(0, best - 0.001);
+      b.pos.x += ux * mv; b.pos.z += uz * mv;
+      let remx = rx - ux * mv, remz = rz - uz * mv;
+      let nx = bn.x, nz = bn.z;
+      const nl = Math.hypot(nx, nz);
+      if (nl < 1e-4) return;
+      nx /= nl; nz /= nl;
+      const dd = remx * nx + remz * nz;
+      if (dd < 0) { remx -= nx * dd; remz -= nz * dd; }
+      rx = remx; rz = remz;
+    }
+  }
+
+  // push a body out of anything it overlaps horizontally
+  depenetrate(b) {
+    const R = b.radius;
+    const hs = [b.stepUp + 0.15, b.height * 0.5];
+    let px = 0, pz = 0;
+    for (const h of hs) {
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        const ux = Math.sin(a), uz = Math.cos(a);
+        _o.set(b.pos.x, b.pos.y + h, b.pos.z);
+        _d.set(ux, 0, uz);
+        const hit = this.firstWall(_o, _d, R);
+        if (hit && hit.distance < R - 0.02) {
+          const push = R - hit.distance;
+          px -= ux * push; pz -= uz * push;
+        }
+      }
+    }
+    const l = Math.hypot(px, pz);
+    if (l > 0.25) { px *= 0.25 / l; pz *= 0.25 / l; }
+    b.pos.x += px; b.pos.z += pz;
+  }
+
+  clearLine(from, to, heights) {
+    for (const h of heights) {
+      _o.set(from.x, from.y + h, from.z);
+      _d.set(to.x - from.x, to.y - from.y, to.z - from.z);
+      const dist = _d.length();
+      if (dist < 1e-4) continue;
+      _d.divideScalar(dist);
+      const hit = this.firstWall(_o, _d, dist);
+      if (hit) return false;
+    }
+    return true;
+  }
+}
+
+class Body {
+  constructor(world, kind) {
+    this.world = world;
+    this.kind = kind;
+    Object.assign(this, CFG[kind]);
+    this.pos = new THREE.Vector3();
+    this.vy = 0;
+    this.grounded = false;
+    this.moving = false;
+    this.yaw = 0;
+  }
+
+  teleport(x, y, z) {
+    this.pos.set(x, y, z);
+    this.vy = 0;
+    this.grounded = false;
+  }
+
+  step(dt, dir, jump) {
+    dt = Math.min(dt, 1 / 20);
+    const n = Math.max(1, Math.ceil(dt * 60));
+    const h = dt / n;
+    for (let i = 0; i < n; i++) this._sub(h, dir, jump && i === 0);
+  }
+
+  _sub(dt, dir, jump) {
+    const len = Math.hypot(dir.x, dir.z);
+    this.moving = len > 0.01;
+    if (this.moving) {
+      const sx = dir.x / len, sz = dir.z / len;
+      this.world.slide(this, sx * this.speed * dt, sz * this.speed * dt);
+      this.yaw = Math.atan2(sx, sz);
+    }
+    this.world.depenetrate(this);
+    this._vertical(dt, jump);
+  }
+
+  _vertical(dt, jump) {
+    const w = this.world;
+    const rad = this.radius * 0.7;
+    if (jump && this.grounded) { this.vy = CFG.jumpPower; this.grounded = false; }
+    this.vy = Math.max(this.vy - CFG.gravity * dt, -200);
+    const dy = this.vy * dt;
+    const was = this.grounded;
+    const top = this.pos.y + this.stepUp;
+    const snap = was ? 0.6 : 0;
+    const far = this.stepUp + Math.max(0, -dy) + snap + 0.01;
+    const gy = this.vy <= 0 ? w.groundY(this.pos.x, top, this.pos.z, rad, far) : null;
+    const ny = this.pos.y + dy;
+    if (gy !== null && gy >= ny - snap) {
+      this.pos.y = gy;
+      this.vy = 0;
+      this.grounded = true;
+    } else {
+      this.pos.y = ny;
+      this.grounded = false;
+    }
+    if (this.vy > 0) {
+      const cy = w.ceilY(this.pos.x, this.pos.y + this.height - 0.4, this.pos.z, rad, 0.5);
+      if (cy !== null) { this.pos.y = cy - this.height - 0.01; this.vy = 0; }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------
+//  Navigation (lazy grid over the collision world) + chase bot
+// ---------------------------------------------------------------------
+class MinHeap {
+  constructor() { this.a = []; }
+  get size() { return this.a.length; }
+  push(f, v) {
+    const a = this.a; a.push({ f, v });
+    let i = a.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (a[p].f <= a[i].f) break;
+      [a[p], a[i]] = [a[i], a[p]]; i = p;
+    }
+  }
+  pop() {
+    const a = this.a, top = a[0], last = a.pop();
+    if (a.length) {
+      a[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1; let m = i;
+        if (l < a.length && a[l].f < a[m].f) m = l;
+        if (r < a.length && a[r].f < a[m].f) m = r;
+        if (m === i) break;
+        [a[m], a[i]] = [a[i], a[m]]; i = m;
+      }
+    }
+    return top.v;
+  }
+}
+
+const DIRS8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+
+class Nav {
+  constructor(world, opts = {}) {
+    this.w = world;
+    this.cell = opts.cell || 2;
+    this.h = opts.height || 3.4;
+    this.r = opts.radius || 0.75;
+    this.stepMax = opts.stepMax || 2.4;
+    this.cache = new Map();
+    this.edges = new Map();
+  }
+
+  surf(cx, cz) {
+    const k = cx + ',' + cz;
+    let s = this.cache.get(k);
+    if (s) return s;
+    s = [];
+    const x = cx * this.cell, z = cz * this.cell;
+    const list = this.w.hits(new THREE.Vector3(x, 80, z), DOWN, 140);
+    let last = 1e9;
+    for (const h of list) {
+      if (h.normal.y < 0.7) continue;
+      const y = h.point.y;
+      if (Math.abs(y - last) < 0.25) continue;
+      last = y;
+      if (this.w.firstAny(new THREE.Vector3(x, y + 0.05, z), UP, this.h)) continue;
+      let ok = true;
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const hit = this.w.firstWall(new THREE.Vector3(x, y + this.h * 0.45, z), new THREE.Vector3(dx, 0, dz), this.r * 0.9);
+        if (hit) { ok = false; break; }
+      }
+      if (ok) s.push(y);
+    }
+    this.cache.set(k, s);
+    return s;
+  }
+
+  key(n) { return n.cx + ',' + n.cz + ',' + n.i; }
+  pos(n) { return new THREE.Vector3(n.cx * this.cell, n.y, n.cz * this.cell); }
+
+  nearest(p) {
+    const cx0 = Math.round(p.x / this.cell), cz0 = Math.round(p.z / this.cell);
+    let best = null, bd = 1e9;
+    for (let r = 0; r <= 3; r++) {
+      for (let dx = -r; dx <= r; dx++) {
+        for (let dz = -r; dz <= r; dz++) {
+          if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
+          const s = this.surf(cx0 + dx, cz0 + dz);
+          s.forEach((y, i) => {
+            const dy = Math.abs(y - p.y);
+            if (dy > 3.2) return;
+            const d = dx * dx + dz * dz + dy * dy * 0.3;
+            if (d < bd) { bd = d; best = { cx: cx0 + dx, cz: cz0 + dz, i, y }; }
+          });
+        }
+      }
+      if (best) break;
+    }
+    return best;
+  }
+
+  neighbors(n) {
+    const k = this.key(n);
+    let e = this.edges.get(k);
+    if (e) return e;
+    e = [];
+    const a = this.pos(n);
+    for (const [dx, dz] of DIRS8) {
+      const s = this.surf(n.cx + dx, n.cz + dz);
+      let bi = -1, bd = 1e9;
+      s.forEach((y, i) => { const d = Math.abs(y - n.y); if (d < bd) { bd = d; bi = i; } });
+      if (bi < 0 || bd > this.stepMax) continue;
+      const nb = { cx: n.cx + dx, cz: n.cz + dz, i: bi, y: s[bi] };
+      const b = this.pos(nb);
+      if (!this.w.clearLine(a, b, [1.7, this.h * 0.9])) continue;
+      e.push(nb);
+    }
+    this.edges.set(k, e);
+    return e;
+  }
+
+  search(fromPos, toPos) { return new NavSearch(this, fromPos, toPos); }
+}
+
+class NavSearch {
+  constructor(nav, from, to) {
+    this.nav = nav;
+    this.done = false;
+    this.path = null;
+    this.expanded = 0;
+    this.start = nav.nearest(from);
+    this.goal = nav.nearest(to);
+    this.target = to.clone();
+    if (!this.start || !this.goal) { this.done = true; return; }
+    this.open = new MinHeap();
+    this.g = new Map();
+    this.came = new Map();
+    this.nodes = new Map();
+    const sk = nav.key(this.start);
+    this.g.set(sk, 0);
+    this.nodes.set(sk, this.start);
+    this.open.push(this.h(this.start), sk);
+    this.goalKey = nav.key(this.goal);
+  }
+
+  h(n) {
+    const dx = n.cx - this.goal.cx, dz = n.cz - this.goal.cz;
+    return Math.hypot(dx, dz) * this.nav.cell + Math.abs(n.y - this.goal.y) * 0.5;
+  }
+
+  step(budgetMs) {
+    if (this.done) return;
+    const t0 = performance.now();
+    const nav = this.nav;
+    while (this.open.size) {
+      if (performance.now() - t0 > budgetMs) return;
+      const ck = this.open.pop();
+      const cur = this.nodes.get(ck);
+      if (ck === this.goalKey) {
+        const out = [];
+        let k = ck;
+        while (k) { out.push(nav.pos(this.nodes.get(k))); k = this.came.get(k); }
+        out.reverse();
+        out.push(this.target);
+        this.path = out;
+        this.done = true;
+        return;
+      }
+      if (++this.expanded > 5000) break;
+      const gc = this.g.get(ck);
+      for (const nb of nav.neighbors(cur)) {
+        const nk = nav.key(nb);
+        const cost = gc + Math.hypot(nb.cx - cur.cx, nb.cz - cur.cz) * nav.cell + Math.abs(nb.y - cur.y) * 0.3;
+        if (cost < (this.g.get(nk) ?? 1e9)) {
+          this.g.set(nk, cost);
+          this.came.set(nk, ck);
+          this.nodes.set(nk, nb);
+          this.open.push(cost + this.h(nb), nk);
+        }
+      }
+    }
+    this.done = true;
+  }
+}
+
+class Bot {
+  constructor(world, nav) {
+    this.world = world;
+    this.nav = nav;
+    this.body = new Body(world, 'noobie');
+    this.path = null;
+    this.pi = 0;
+    this.search = null;
+    this.replan = 0;
+    this.stuck = 0;
+    this.last = new THREE.Vector3();
+    this.dir = new THREE.Vector3();
+  }
+
+  update(dt, targets) {
+    const b = this.body;
+    this.replan -= dt;
+    let t = null, bd = Infinity;
+    for (const o of targets) {
+      const d = o.distanceToSquared(b.pos);
+      if (d < bd) { bd = d; t = o; }
+    }
+    this.dir.set(0, 0, 0);
+    if (t) {
+      const dx = t.x - b.pos.x, dz = t.z - b.pos.z;
+      const flat = Math.hypot(dx, dz);
+      const dy = Math.abs(t.y - b.pos.y);
+      const direct = flat < 14 && dy < 2.2 && this.world.clearLine(b.pos, t, [b.stepUp + 0.2, b.height * 0.6]);
+      if (direct) {
+        this.path = null; this.search = null;
+        if (flat > 0.6) this.dir.set(dx / flat, 0, dz / flat);
+      } else {
+        if (!this.search && this.replan <= 0) {
+          this.search = this.nav.search(b.pos, t);
+          this.replan = 1.0;
+        }
+        if (this.search) {
+          this.search.step(4);
+          if (this.search.done) {
+            if (this.search.path) { this.path = this.search.path; this.pi = 0; }
+            this.search = null;
+          }
+        }
+        if (this.path) {
+          while (this.pi < this.path.length - 1 && Math.hypot(this.path[this.pi].x - b.pos.x, this.path[this.pi].z - b.pos.z) < 0.9) this.pi++;
+          if (this.pi + 1 < this.path.length && Math.abs(this.path[this.pi + 1].y - b.pos.y) < 1.5 &&
+              this.world.clearLine(b.pos, this.path[this.pi + 1], [b.stepUp + 0.2, b.height * 0.6])) this.pi++;
+          const w = this.path[this.pi];
+          const wx = w.x - b.pos.x, wz = w.z - b.pos.z, wl = Math.hypot(wx, wz);
+          if (wl > 0.3) this.dir.set(wx / wl, 0, wz / wl);
+          else if (this.pi >= this.path.length - 1) this.path = null;
+        } else if (flat > 0.6) {
+          this.dir.set(dx / flat, 0, dz / flat);
+        }
+      }
+    }
+    b.step(dt, this.dir, false);
+    // stuck detection: wanted to move but barely did
+    if (this.dir.lengthSq() > 0) {
+      const moved = Math.hypot(b.pos.x - this.last.x, b.pos.z - this.last.z);
+      this.stuck = moved < b.speed * dt * 0.25 ? this.stuck + dt : 0;
+      if (this.stuck > 0.8) { this.replan = 0; this.path = null; this.stuck = 0; }
+    } else this.stuck = 0;
+    this.last.copy(b.pos);
+  }
+}
+
+// ---------------------------------------------------------------------
+//  Transport: same-browser rooms over BroadcastChannel.
+//  Firebase later = another class with this exact interface.
+//  createRoom(info) -> code | joinRoom(code, info) | leave()
+//  setSettings(patch) | start(payload) | sendState(s) | on(evt, cb)
+//  events: room(state) start(payload) state(fromId, s) closed()
+// ---------------------------------------------------------------------
+class LocalTransport {
+  constructor() {
+    this.id = 'p' + Math.random().toString(36).slice(2, 8);
+    this.ch = new BroadcastChannel('noobie-rooms-v1');
+    this.ch.onmessage = (e) => this._msg(e.data);
+    this.room = null;
+    this.h = { room: [], start: [], state: [], closed: [] };
+    this.pending = new Map();
+    this.timer = null;
+  }
+
+  on(evt, cb) { this.h[evt].push(cb); }
+  _emit(evt, ...a) { for (const cb of this.h[evt]) cb(...a); }
+  _post(m) { this.ch.postMessage(m); }
+
+  _probe(code) {
+    return new Promise((res) => {
+      const key = 'probe' + code;
+      this.pending.set(key, res);
+      this._post({ t: 'probe', room: code, from: this.id });
+      setTimeout(() => { if (this.pending.delete(key)) res(false); }, 350);
+    });
+  }
+
+  async createRoom(info) {
+    for (let i = 0; i < 25; i++) {
+      const code = String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+      if (await this._probe(code)) continue;
+      const me = { id: this.id, name: info.name, color: info.color };
+      const state = { code, hostId: this.id, phase: 'lobby', settings: { noobie: 'bot' }, players: { [this.id]: me } };
+      this.room = { code, isHost: true, state, seen: { [this.id]: Date.now() } };
+      this._timers();
+      this._emit('room', state);
+      return code;
+    }
+    throw new Error('Could not allocate a room code');
+  }
+
+  joinRoom(code, info) {
+    return new Promise((res, rej) => {
+      this.room = { code, isHost: false, state: null };
+      const key = 'join' + code;
+      const fail = (msg) => { this.pending.delete(key); this.room = null; rej(new Error(msg)); };
+      this.pending.set(key, { ok: () => { this.pending.delete(key); this._timers(); res(code); }, fail });
+      this._post({ t: 'join', room: code, from: this.id, player: { id: this.id, name: info.name, color: info.color } });
+      setTimeout(() => { if (this.pending.has(key)) fail('Room not found'); }, 900);
+    });
+  }
+
+  _timers() {
+    clearInterval(this.timer);
+    this.timer = setInterval(() => {
+      if (!this.room) return;
+      if (this.room.isHost) {
+        const now = Date.now(), st = this.room.state;
+        let changed = false;
+        for (const id of Object.keys(st.players)) {
+          if (id !== this.id && now - (this.room.seen[id] || 0) > 8000) { delete st.players[id]; changed = true; }
+        }
+        this._post({ t: 'room', room: st.code, state: st });
+        if (changed) this._emit('room', st);
+      } else {
+        this._post({ t: 'ping', room: this.room.code, from: this.id });
+      }
+    }, 2000);
+  }
+
+  _msg(m) {
+    const r = this.room;
+    switch (m.t) {
+      case 'probe':
+        if (r && r.isHost && r.code === m.room) this._post({ t: 'exists', room: m.room, to: m.from });
+        break;
+      case 'exists': {
+        if (m.to !== this.id) break;
+        const f = this.pending.get('probe' + m.room);
+        if (f) { this.pending.delete('probe' + m.room); f(true); }
+        break;
+      }
+      case 'join': {
+        if (!r || !r.isHost || r.code !== m.room) break;
+        const st = r.state;
+        if (st.phase !== 'lobby') { this._post({ t: 'err', to: m.from, room: m.room, msg: 'Game already started' }); break; }
+        if (Object.keys(st.players).length >= CFG.maxPlayers) { this._post({ t: 'err', to: m.from, room: m.room, msg: 'Room is full' }); break; }
+        st.players[m.player.id] = m.player;
+        r.seen[m.player.id] = Date.now();
+        this._post({ t: 'joined', to: m.from, room: m.room });
+        this._post({ t: 'room', room: m.room, state: st });
+        this._emit('room', st);
+        break;
+      }
+      case 'joined': {
+        if (m.to !== this.id) break;
+        const p = this.pending.get('join' + m.room);
+        if (p) p.ok();
+        break;
+      }
+      case 'err': {
+        if (m.to !== this.id) break;
+        const p = this.pending.get('join' + m.room);
+        if (p) p.fail(m.msg);
+        break;
+      }
+      case 'room':
+        if (r && !r.isHost && r.code === m.room) { r.state = m.state; this._emit('room', m.state); }
+        break;
+      case 'ping':
+        if (r && r.isHost && r.code === m.room) r.seen[m.from] = Date.now();
+        break;
+      case 'leave':
+        if (r && r.isHost && r.code === m.room && r.state.players[m.from]) {
+          delete r.state.players[m.from];
+          this._post({ t: 'room', room: m.room, state: r.state });
+          this._emit('room', r.state);
+        }
+        break;
+      case 'closed':
+        if (r && !r.isHost && r.code === m.room) { this._clear(); this._emit('closed'); }
+        break;
+      case 'start':
+        if (r && !r.isHost && r.code === m.room) this._emit('start', m.payload);
+        break;
+      case 'state':
+        if (r && r.code === m.room && m.from !== this.id) this._emit('state', m.from, m.s);
+        break;
+    }
+  }
+
+  setSettings(patch) {
+    const r = this.room;
+    if (!r || !r.isHost) return;
+    Object.assign(r.state.settings, patch);
+    this._post({ t: 'room', room: r.code, state: r.state });
+    this._emit('room', r.state);
+  }
+
+  start(payload) {
+    const r = this.room;
+    if (!r || !r.isHost) return;
+    r.state.phase = 'playing';
+    this._post({ t: 'room', room: r.code, state: r.state });
+    this._post({ t: 'start', room: r.code, payload });
+    this._emit('start', payload);
+  }
+
+  sendState(s) {
+    if (!this.room) return;
+    this._post({ t: 'state', room: this.room.code, from: this.id, s });
+  }
+
+  _clear() { clearInterval(this.timer); this.timer = null; this.room = null; }
+
+  leave() {
+    const r = this.room;
+    if (!r) return;
+    if (r.isHost) this._post({ t: 'closed', room: r.code });
+    else this._post({ t: 'leave', room: r.code, from: this.id });
+    this._clear();
+  }
+}
+
+
+// =====================================================================
+//  CONFIG
+// =====================================================================
 const CONFIG = {
-  modelPath: "./Main_Menu.glb",
-  orbitSpeed: 0.04,
-  orbitRadiusScale: 1.6,
-  cameraHeightScale: 0.35,
-  parallax: 0.15,
-  fov: 55,
-  exposure: 1.0,
+  menuModel: "./Main_Menu.glb",
+  houseModel: "./House_Map.glb",
+  roomModel: "./Noobie_Room.glb",
+  noobieModel: "./NoobiePlayer.glb",
+  orbitSpeed: 0.04, orbitRadiusScale: 1.6, cameraHeightScale: 0.35, parallax: 0.15,
+  fov: 55, exposure: 1.1,
+  camDist: 13, camMin: 4, camMax: 30, mouseSens: 0.0025,
+  netHz: 15,
+  palette: ["#c0392b", "#2e86c1", "#27ae60", "#d4ac0d", "#8e44ad", "#e67e22", "#16a085", "#d35400"],
   debug: new URLSearchParams(location.search).has("debug"),
 };
 
-const log = (...a) => CONFIG.debug && console.log("[menu]", ...a);
 const $ = (id) => document.getElementById(id);
+const log = (...a) => CONFIG.debug && console.log("[game]", ...a);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
-// ---------- Game hooks ----------
-function startSingleplayer() {
-  log("singleplayer selected");
-  setStatus("Starting singleplayer...");
-  window.dispatchEvent(new CustomEvent("game:start", { detail: { mode: "singleplayer" } }));
-}
-function startMultiplayer() {
-  log("multiplayer selected");
-  setStatus("Opening multiplayer...");
-  window.dispatchEvent(new CustomEvent("game:start", { detail: { mode: "multiplayer" } }));
-}
-
-// ---------- UI ----------
-const panels = { main: $("panel-main"), mode: $("panel-mode") };
-function showPanel(name) {
-  for (const [k, el] of Object.entries(panels)) el.classList.toggle("active", k === name);
-  const first = panels[name].querySelector("button");
-  if (first) first.focus({ preventScroll: true });
-}
-let statusTimer = null;
-function setStatus(msg, ms = 2500) {
-  $("status").textContent = msg;
-  clearTimeout(statusTimer);
-  if (ms) statusTimer = setTimeout(() => ($("status").textContent = ""), ms);
-}
-
-$("btn-play").addEventListener("click", () => showPanel("mode"));
-$("btn-back").addEventListener("click", () => showPanel("main"));
-$("btn-single").addEventListener("click", startSingleplayer);
-$("btn-multi").addEventListener("click", startMultiplayer);
-window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && panels.mode.classList.contains("active")) showPanel("main");
-});
-
-// ---------- Renderer / scene ----------
+// =====================================================================
+//  RENDERER
+// =====================================================================
 const canvas = $("scene");
 let renderer;
 try {
@@ -161,105 +826,744 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = CONFIG.exposure;
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x120d08);
-const camera = new THREE.PerspectiveCamera(CONFIG.fov, 1, 0.01, 5000);
-
-scene.add(new THREE.HemisphereLight(0xfff1d6, 0x2a1e12, 1.1));
-const sun = new THREE.DirectionalLight(0xffe2b0, 2.0);
-sun.position.set(5, 8, 5);
-scene.add(sun);
-
-function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
-  renderer.setSize(w, h, false);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
+let statusTimer = null;
+function setStatus(msg, ms = 2500) {
+  $("status").textContent = msg;
+  clearTimeout(statusTimer);
+  if (ms) statusTimer = setTimeout(() => ($("status").textContent = ""), ms);
 }
-window.addEventListener("resize", resize);
-resize();
+function showLoader(text) {
+  $("loader-text").textContent = text;
+  $("bar").firstElementChild.style.width = "0%";
+  $("loader").classList.remove("done");
+}
+function hideLoader() { $("loader").classList.add("done"); }
+function progress(evt) {
+  if (evt && evt.lengthComputable) $("bar").firstElementChild.style.width = `${(evt.loaded / evt.total) * 100}%`;
+}
 
-// ---------- Load model ----------
-let mixer = null;
-let center = new THREE.Vector3();
-let radius = 5;
-let baseHeight = 1;
-let ready = false;
+const gltfLoader = new GLTFLoader();
+const loadGLB = (path, onProg) => new Promise((res, rej) => gltfLoader.load(path, res, onProg, rej));
 
-const loader = new GLTFLoader();
-loader.load(
-  CONFIG.modelPath,
-  (gltf) => {
-    const model = gltf.scene;
-    scene.add(model);
-
-    const box = new THREE.Box3().setFromObject(model);
-    const size = box.getSize(new THREE.Vector3());
-    box.getCenter(center);
-    const maxDim = Math.max(size.x, size.y, size.z) || 1;
-    radius = maxDim * CONFIG.orbitRadiusScale;
-    baseHeight = center.y + maxDim * CONFIG.cameraHeightScale;
-    camera.near = maxDim / 1000;
-    camera.far = maxDim * 100;
-    camera.updateProjectionMatrix();
-    log("model size", size, "center", center);
-
-    if (gltf.animations && gltf.animations.length) {
-      mixer = new THREE.AnimationMixer(model);
-      gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
-      log("playing", gltf.animations.length, "animation(s)");
-    }
-
-    ready = true;
-    $("loader").classList.add("done");
-  },
-  (evt) => {
-    if (evt.lengthComputable) $("bar").firstElementChild.style.width = `${(evt.loaded / evt.total) * 100}%`;
-  },
-  (err) => {
-    console.error("Model failed to load:", err);
-    $("loader").classList.add("done");
-    setStatus("Could not load Main_Menu.glb. Serve this page over http, with the file beside it.", 0);
+// three decomposes node matrices into TRS, which drops shear. The map has a few
+// sheared pieces (ramps, boards), so put the authored matrices back.
+function restoreMatrices(gltf) {
+  const json = gltf.parser.json;
+  const ids = json.scenes[json.scene || 0].nodes;
+  const kids = gltf.scene.children;
+  if (ids.length === kids.length) {
+    ids.forEach((id, k) => {
+      const def = json.nodes[id];
+      if (def.matrix) {
+        const o = kids[k];
+        o.matrixAutoUpdate = false;
+        o.matrix.fromArray(def.matrix);
+      }
+    });
   }
-);
+  gltf.scene.updateMatrixWorld(true);
+}
 
-// ---------- Parallax ----------
+// =====================================================================
+//  MENU SCENE (background model)
+// =====================================================================
+const menuScene = new THREE.Scene();
+menuScene.background = new THREE.Color(0x120d08);
+const menuCam = new THREE.PerspectiveCamera(CONFIG.fov, 1, 0.01, 5000);
+menuScene.add(new THREE.HemisphereLight(0xfff1d6, 0x2a1e12, 1.1));
+const menuSun = new THREE.DirectionalLight(0xffe2b0, 2.0);
+menuSun.position.set(5, 8, 5);
+menuScene.add(menuSun);
+
+let menuMixer = null, menuReady = false, menuAngle = 0;
+const menuCenter = new THREE.Vector3();
+let menuRadius = 5, menuBaseH = 1;
+
+loadGLB(CONFIG.menuModel, progress).then((gltf) => {
+  const model = gltf.scene;
+  menuScene.add(model);
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  box.getCenter(menuCenter);
+  const maxDim = Math.max(size.x, size.y, size.z) || 1;
+  menuRadius = maxDim * CONFIG.orbitRadiusScale;
+  menuBaseH = menuCenter.y + maxDim * CONFIG.cameraHeightScale;
+  menuCam.near = maxDim / 1000;
+  menuCam.far = maxDim * 100;
+  menuCam.updateProjectionMatrix();
+  if (gltf.animations && gltf.animations.length) {
+    menuMixer = new THREE.AnimationMixer(model);
+    gltf.animations.forEach((c) => menuMixer.clipAction(c).play());
+  }
+  menuReady = true;
+  hideLoader();
+}).catch((err) => {
+  console.error("Menu model failed:", err);
+  hideLoader();
+  setStatus("Could not load Main_Menu.glb. Serve this page over http, with the files beside it.", 0);
+});
+
 const mouse = { x: 0, y: 0, sx: 0, sy: 0 };
 window.addEventListener("pointermove", (e) => {
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
   mouse.y = (e.clientY / window.innerHeight) * 2 - 1;
 });
 
-// ---------- Loop ----------
+// =====================================================================
+//  UI / MENU FLOW
+// =====================================================================
+const panels = {};
+for (const p of document.querySelectorAll(".panel")) panels[p.id.replace("panel-", "")] = p;
+function showPanel(name) {
+  for (const [k, el] of Object.entries(panels)) el.classList.toggle("active", k === name);
+  const first = panels[name].querySelector("button:not(:disabled), input");
+  if (first) first.focus({ preventScroll: true });
+}
+
+const me = {
+  name: localStorage.getItem("noobie.name") || ("Guest" + Math.floor(100 + Math.random() * 900)),
+  color: CONFIG.palette[Math.floor(Math.random() * CONFIG.palette.length)],
+};
+$("name-input").value = me.name;
+function readName() {
+  const v = $("name-input").value.trim().slice(0, 14);
+  me.name = v || me.name;
+  try { localStorage.setItem("noobie.name", me.name); } catch (e) { /* storage unavailable */ }
+}
+
+let net = null;          // transport, set when entering multiplayer
+let lobby = null;        // latest room state
+
+function createTransport() {
+  // Swap this one line for the Firebase transport later.
+  return new LocalTransport();
+}
+
+function ensureNet() {
+  if (net) return net;
+  net = createTransport();
+  net.on("room", onRoomState);
+  net.on("start", (payload) => beginGame(payload));
+  net.on("state", onNetState);
+  net.on("closed", () => {
+    lobby = null;
+    if (G) exitToMenu("The host closed the room.");
+    else { showPanel("mp"); $("mp-err").textContent = "The host closed the room."; }
+  });
+  return net;
+}
+
+$("btn-play").addEventListener("click", () => showPanel("mode"));
+$("btn-back-mode").addEventListener("click", () => showPanel("main"));
+$("btn-single").addEventListener("click", () => {
+  beginGame({ mode: "singleplayer", hostId: "me", noobie: { type: "bot" },
+    players: [{ id: "me", name: me.name, color: me.color }] });
+});
+$("btn-multi").addEventListener("click", () => { $("mp-err").textContent = ""; showPanel("mp"); });
+$("btn-back-mp").addEventListener("click", () => showPanel("mode"));
+$("btn-back-join").addEventListener("click", () => showPanel("mp"));
+
+$("btn-create").addEventListener("click", async () => {
+  readName();
+  $("mp-err").textContent = "";
+  $("btn-create").disabled = true;
+  try {
+    await ensureNet().createRoom({ name: me.name, color: me.color });
+    showPanel("lobby");
+  } catch (e) {
+    $("mp-err").textContent = e.message;
+  } finally { $("btn-create").disabled = false; }
+});
+$("btn-join").addEventListener("click", () => { readName(); $("join-err").textContent = ""; showPanel("join"); });
+
+async function doJoin() {
+  const code = $("code-input").value.replace(/\D/g, "");
+  if (code.length !== 4) { $("join-err").textContent = "Enter all 4 digits."; return; }
+  readName();
+  $("join-err").textContent = "";
+  $("btn-join-go").disabled = true;
+  try {
+    await ensureNet().joinRoom(code, { name: me.name, color: me.color });
+    showPanel("lobby");
+  } catch (e) {
+    $("join-err").textContent = e.message;
+  } finally { $("btn-join-go").disabled = false; }
+}
+$("btn-join-go").addEventListener("click", doJoin);
+$("code-input").addEventListener("input", (e) => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); });
+$("code-input").addEventListener("keydown", (e) => { if (e.key === "Enter") doJoin(); });
+
+$("btn-leave-lobby").addEventListener("click", () => {
+  if (net) net.leave();
+  lobby = null;
+  showPanel("mp");
+});
+$("noobie-select").addEventListener("change", (e) => { if (net) net.setSettings({ noobie: e.target.value }); });
+
+$("btn-start").addEventListener("click", () => {
+  if (!net || !lobby || net.id !== lobby.hostId) return;
+  const players = Object.values(lobby.players).sort((a, b) => (a.id < b.id ? -1 : 1));
+  let choice = lobby.settings.noobie;
+  if (choice === "random") choice = players[Math.floor(Math.random() * players.length)].id;
+  const noobie = (choice !== "bot" && lobby.players[choice]) ? { type: "player", id: choice } : { type: "bot" };
+  if (noobie.type === "player" && players.length < 2) return;
+  net.start({ mode: "multiplayer", hostId: lobby.hostId, noobie, players });
+});
+
+function onRoomState(state) {
+  lobby = state;
+  if (G) { syncRoster(state); return; }
+  renderLobby();
+}
+
+function renderLobby() {
+  if (!lobby || !net) return;
+  const isHost = net.id === lobby.hostId;
+  $("lobby-code").textContent = lobby.code;
+  const players = Object.values(lobby.players).sort((a, b) => (a.id < b.id ? -1 : 1));
+  const list = $("lobby-list");
+  list.innerHTML = "";
+  for (const p of players) {
+    const li = document.createElement("li");
+    const dot = document.createElement("span");
+    dot.className = "dot"; dot.style.background = p.color;
+    const nm = document.createElement("span");
+    nm.textContent = p.name;
+    li.append(dot, nm);
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = [p.id === lobby.hostId ? "HOST" : "", p.id === net.id ? "YOU" : ""].filter(Boolean).join(" / ");
+    li.append(tag);
+    list.append(li);
+  }
+  const sel = $("noobie-select");
+  const current = lobby.settings.noobie;
+  sel.innerHTML = "";
+  const opts = [["bot", "Bot"], ["random", "Random player"], ...players.map((p) => [p.id, p.name])];
+  for (const [v, t] of opts) {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = t; sel.append(o);
+  }
+  sel.value = opts.some(([v]) => v === current) ? current : "bot";
+  $("lobby-host").style.display = isHost ? "flex" : "none";
+  $("btn-start").style.display = isHost ? "" : "none";
+
+  const choice = sel.value;
+  const needTwo = choice !== "bot" && players.length < 2;
+  $("btn-start").disabled = needTwo;
+  if (isHost) {
+    $("lobby-wait").textContent = needTwo
+      ? "A player Noobie needs at least 2 players in the room."
+      : (players.length < 2 ? "Waiting for players to join... (you can start anytime)" : `${players.length} players ready.`);
+  } else {
+    const who = choice === "bot" ? "a bot" : choice === "random" ? "a random player" : (lobby.players[choice]?.name || "a bot");
+    $("lobby-wait").textContent = `Waiting for the host to start. Noobie is ${who}.`;
+  }
+}
+
+window.addEventListener("keydown", (e) => {
+  if (G) return;
+  if (e.key === "Escape") {
+    const active = Object.entries(panels).find(([, el]) => el.classList.contains("active"))?.[0];
+    if (active === "mode") showPanel("main");
+    else if (active === "mp") showPanel("mode");
+    else if (active === "join") showPanel("mp");
+  }
+});
+
+// =====================================================================
+//  ASSETS
+// =====================================================================
+let assets = null;
+async function ensureGameAssets() {
+  if (assets) return assets;
+  showLoader("Loading map...");
+  const prog = [0, 0, 0];
+  const upd = (i) => (evt) => {
+    if (evt.lengthComputable) prog[i] = evt.loaded / evt.total;
+    $("bar").firstElementChild.style.width = `${((prog[0] + prog[1] + prog[2]) / 3) * 100}%`;
+  };
+  const [house, room, noobie] = await Promise.all([
+    loadGLB(CONFIG.houseModel, upd(0)),
+    loadGLB(CONFIG.roomModel, upd(1)),
+    loadGLB(CONFIG.noobieModel, upd(2)),
+  ]);
+  restoreMatrices(house);
+  restoreMatrices(room);
+  assets = { house, room, noobie };
+  return assets;
+}
+
+const colliderFilter = (o) => {
+  if (o.name === "Spawn") return false;
+  const m = o.material;
+  // fully transparent placeholders (keys, tools, batteries) are not solid; invisible barriers are
+  if (m && m.opacity === 0 && !o.name.startsWith("Barrier")) return false;
+  return true;
+};
+
+// =====================================================================
+//  CHARACTER VISUALS
+// =====================================================================
+function makeSurvivorVisual(colorHex) {
+  const g = new THREE.Group();
+  const mk = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85 });
+  const skin = mk(0xf2c94c), shirt = mk(colorHex), pants = mk(0x2c3e50), dark = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  const part = (w, h, d, mat, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); return m; };
+  const pivot = (x, y, z, mesh) => { const p = new THREE.Group(); p.position.set(x, y, z); p.add(mesh); return p; };
+  g.add(part(1.9, 1.9, 1.0, shirt, 0, 2.85, 0));
+  const head = part(1.2, 1.2, 1.2, skin, 0, 4.4, 0);
+  head.add(part(0.2, 0.2, 0.02, dark, -0.3, 0.1, 0.61), part(0.2, 0.2, 0.02, dark, 0.3, 0.1, 0.61), part(0.5, 0.1, 0.02, dark, 0, -0.25, 0.61));
+  g.add(head);
+  const armL = pivot(-1.4, 3.7, 0, part(0.9, 1.8, 0.9, skin, 0, -0.9, 0));
+  const armR = pivot(1.4, 3.7, 0, part(0.9, 1.8, 0.9, skin, 0, -0.9, 0));
+  const legL = pivot(-0.5, 1.9, 0, part(0.95, 1.9, 0.95, pants, 0, -0.95, 0));
+  const legR = pivot(0.5, 1.9, 0, part(0.95, 1.9, 0.95, pants, 0, -0.95, 0));
+  g.add(armL, armR, legL, legR);
+  let mode = "idle", t = 0, amp = 0;
+  return {
+    group: g, height: 5,
+    play(n) { mode = n; },
+    update(dt) {
+      const target = mode === "walk" ? 1 : 0;
+      amp += (target - amp) * Math.min(1, dt * 12);
+      t += dt * 11;
+      const s = Math.sin(t) * 0.9 * amp;
+      armL.rotation.x = s; armR.rotation.x = -s;
+      legL.rotation.x = -s; legR.rotation.x = s;
+      if (mode === "jump") { armL.rotation.x = armR.rotation.x = -2.6; legL.rotation.x = -0.3; legR.rotation.x = 0.3; }
+    },
+  };
+}
+
+function makeNoobieVisual(gltf) {
+  const model = gltf.scene.clone(true);
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model);
+  const s = CFG.noobie.height / ((box.max.y - box.min.y) || 1);
+  model.scale.setScalar(s);
+  model.position.y = -box.min.y * s;
+  const wrap = new THREE.Group();
+  wrap.add(model);
+  const mixer = new THREE.AnimationMixer(model);
+  const actions = {};
+  for (const c of gltf.animations) actions[c.name.toLowerCase()] = mixer.clipAction(c);
+  let cur = null, curAct = null;
+  const api = {
+    group: wrap, height: CFG.noobie.height,
+    play(n) {
+      if (cur === n) return;
+      const next = actions[n] || actions.idle;
+      if (!next || next === curAct) { cur = n; return; }
+      next.reset();
+      if (n === "jump") { next.setLoop(THREE.LoopOnce, 1); next.clampWhenFinished = true; } else next.setLoop(THREE.LoopRepeat, Infinity);
+      next.fadeIn(0.15).play();
+      if (curAct) curAct.fadeOut(0.15);
+      curAct = next; cur = n;
+    },
+    update(dt) { mixer.update(dt); },
+  };
+  api.play("idle");
+  return api;
+}
+
+function makeNameTag(text, y) {
+  const c = document.createElement("canvas");
+  c.width = 512; c.height = 128;
+  const x = c.getContext("2d");
+  x.font = '64px "Special Elite", "Courier New", monospace';
+  x.textAlign = "center"; x.textBaseline = "middle";
+  x.lineWidth = 10; x.strokeStyle = "#120d08"; x.strokeText(text, 256, 64);
+  x.fillStyle = "#f1e4c3"; x.fillText(text, 256, 64);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  spr.scale.set(6, 1.5, 1);
+  spr.position.y = y;
+  return spr;
+}
+
+class Entity {
+  constructor(id, visual, label) {
+    this.id = id; this.v = visual; this.group = new THREE.Group();
+    this.group.add(visual.group);
+    if (label) this.group.add(makeNameTag(label, visual.height + 1.3));
+    this.tp = new THREE.Vector3(); this.tyaw = 0; this.yaw = 0;
+    this.anim = "idle"; this.first = true; this.local = false;
+  }
+  set(x, y, z, yaw, anim, active) {
+    this.tp.set(x, y, z); this.tyaw = yaw; this.anim = anim || "idle";
+    this.group.visible = active !== false;
+    if (this.first) { this.group.position.copy(this.tp); this.yaw = yaw; this.first = false; }
+  }
+  tick(dt) {
+    if (!this.local) {
+      this.group.position.lerp(this.tp, 1 - Math.exp(-14 * dt));
+    }
+    let d = this.tyaw - this.yaw;
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    this.yaw += d * (1 - Math.exp(-14 * dt));
+    this.v.group.rotation.y = this.yaw;
+    this.v.play(this.anim);
+    this.v.update(dt);
+  }
+}
+
+// =====================================================================
+//  GAME SESSION
+// =====================================================================
+let G = null;            // active session
+const keys = new Set();
+const cam = { yaw: Math.PI, pitch: 0.45, dist: CONFIG.camDist };
+const gameCam = new THREE.PerspectiveCamera(70, 1, 0.1, 2000);
+
+const tmpDir = new THREE.Vector3();
+const slotPos = (i) => ({
+  x: CFG.spawn.x + ((i % 4) - 1.5) * 2.6,
+  z: CFG.spawn.z + 1.5 + Math.floor(i / 4) * 2.6,
+});
+
+async function beginGame(payload) {
+  if (G) return;
+  try {
+    const a = await ensureGameAssets();
+    buildSession(payload, a);
+  } catch (err) {
+    console.error(err);
+    hideLoader();
+    setStatus("Could not load the game files. Serve over http with all .glb files beside index.html.", 0);
+    if (net) net.leave();
+    showPanel("mode");
+  }
+}
+
+function buildSession(payload, a) {
+  const online = payload.mode === "multiplayer" && !!net;
+  const myId = online ? net.id : "me";
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0e0b08);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x6a6258, 1.5));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  const sun = new THREE.DirectionalLight(0xfff0d8, 1.3);
+  sun.position.set(30, 80, 20);
+  scene.add(sun);
+
+  const house = a.house.scene.clone(true);
+  const room = a.room.scene.clone(true);
+  for (const root of [house, room]) {
+    root.traverse((o) => { if (o.isMesh && o.material && o.material.opacity === 0) o.visible = false; });
+    scene.add(root);
+  }
+  const roomLight = new THREE.PointLight(0xfff0d8, 90, 40, 2);
+  roomLight.position.set(0, 3.4, 0);
+  scene.add(roomLight);
+
+  const world = new World();
+  world.addColliders(house, colliderFilter);
+  world.addColliders(room, colliderFilter);
+
+  const roster = new Map(payload.players.map((p) => [p.id, p]));
+  const noobieIsPlayer = payload.noobie.type === "player";
+  const noobieId = noobieIsPlayer ? payload.noobie.id : null;
+  const survivors = payload.players.filter((p) => p.id !== noobieId);
+  const iAmNoobie = noobieId === myId;
+  const botController = !noobieIsPlayer && (!online || net.id === payload.hostId);
+
+  G = {
+    payload, online, myId, scene, world, roster, noobieId, iAmNoobie, botController,
+    entities: new Map(), ready: true, t: 0, sendT: 0,
+    spawnIn: CFG.noobieDelay,       // seconds until Noobie appears (as last known)
+    noobieLoose: false, looseMsgT: 0,
+    bot: null, body: null, ent: null, jumpQueued: false, fellT: 0,
+  };
+
+  // local body
+  const kind = iAmNoobie ? "noobie" : "survivor";
+  G.body = new Body(world, kind);
+  if (iAmNoobie) {
+    G.body.teleport(CFG.noobieRoom.x, CFG.noobieRoom.y + 0.4, CFG.noobieRoom.z);
+  } else {
+    const i = Math.max(0, survivors.findIndex((p) => p.id === myId));
+    const s = slotPos(i);
+    G.body.teleport(s.x, 0.6, s.z);
+    G.body.yaw = 0;
+  }
+
+  // entities for everyone
+  const mkEntity = (id, isNoobie, label, color) => {
+    const vis = isNoobie ? makeNoobieVisual(a.noobie) : makeSurvivorVisual(color);
+    const e = new Entity(id, vis, label);
+    scene.add(e.group);
+    G.entities.set(id, e);
+    return e;
+  };
+  survivors.forEach((p, i) => {
+    const e = mkEntity(p.id, false, p.id === myId ? null : p.name, new THREE.Color(p.color));
+    const s = slotPos(i);
+    e.set(s.x, 0.05, s.z, 0, "idle", true);
+  });
+  if (noobieIsPlayer) {
+    const p = roster.get(noobieId);
+    const e = mkEntity(noobieId, true, iAmNoobie ? null : p.name);
+    e.set(CFG.noobieRoom.x, 0.2, CFG.noobieRoom.z, 0, "idle", iAmNoobie);
+  } else {
+    const e = mkEntity("BOT", true, "Noobie");
+    e.set(CFG.spawn.x, 0.05, CFG.spawn.z + 3, 0, "idle", false);
+  }
+  G.ent = G.entities.get(myId);
+  G.ent.local = true;
+
+  if (botController) {
+    G.bot = new Bot(world, new Nav(world, { height: CFG.noobie.height, radius: CFG.noobie.radius }));
+  }
+
+  // camera
+  cam.yaw = iAmNoobie ? 0 : Math.PI;
+  cam.pitch = 0.4;
+  cam.dist = iAmNoobie ? 7 : CONFIG.camDist;
+
+  // UI
+  $("ui").classList.add("hidden");
+  $("vignette").classList.add("hidden");
+  $("hud").classList.add("on");
+  $("hud-room").textContent = online && lobby ? `ROOM ${lobby.code}` : "";
+  $("hud-hint").classList.remove("hidden");
+  hideLoader();
+  resize();
+  setStatus("");
+}
+
+function syncRoster(state) {
+  if (!G) return;
+  for (const id of [...G.entities.keys()]) {
+    if (id === "BOT" || id === G.myId) continue;
+    if (!state.players[id]) {
+      const e = G.entities.get(id);
+      G.scene.remove(e.group);
+      G.entities.delete(id);
+      setStatus(`${G.roster.get(id)?.name || "A player"} left.`);
+    }
+  }
+}
+
+function onNetState(from, s) {
+  if (!G || !s || s.id === G.myId) return;
+  const e = G.entities.get(s.id);
+  if (!e) return;
+  e.set(s.x, s.y, s.z, s.yaw, s.anim, s.active);
+  if (s.role === "noobie") {
+    G.spawnIn = s.spawnIn;
+    if (s.active && !G.noobieLoose) { G.noobieLoose = true; G.looseMsgT = 4; }
+  }
+}
+
+function exitToMenu(msg) {
+  if (!G) return;
+  if (document.pointerLockElement) document.exitPointerLock();
+  G = null;
+  keys.clear();
+  $("hud").classList.remove("on");
+  $("ui").classList.remove("hidden");
+  $("vignette").classList.remove("hidden");
+  $("hud-msg").classList.add("empty");
+  if (net) { net.leave(); lobby = null; }
+  showPanel("mode");
+  if (msg) setStatus(msg, 4000);
+}
+$("btn-leave").addEventListener("click", () => exitToMenu());
+
+// ---------- input ----------
+window.addEventListener("keydown", (e) => {
+  if (!G) return;
+  if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
+  if (e.code === "Space" && !e.repeat) G.jumpQueued = true;
+  keys.add(e.code);
+});
+window.addEventListener("keyup", (e) => keys.delete(e.code));
+window.addEventListener("blur", () => keys.clear());
+canvas.addEventListener("click", () => { if (G && !document.pointerLockElement) canvas.requestPointerLock?.(); });
+canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+let dragging = false;
+canvas.addEventListener("pointerdown", (e) => { if (e.button === 2) dragging = true; });
+window.addEventListener("pointerup", () => { dragging = false; });
+window.addEventListener("mousemove", (e) => {
+  if (!G) return;
+  if (document.pointerLockElement === canvas || dragging) {
+    cam.yaw -= e.movementX * CONFIG.mouseSens;
+    cam.pitch = clamp(cam.pitch + e.movementY * CONFIG.mouseSens, -0.15, 1.4);
+  }
+});
+window.addEventListener("wheel", (e) => {
+  if (!G) return;
+  cam.dist = clamp(cam.dist + Math.sign(e.deltaY) * 1.2, CONFIG.camMin, CONFIG.camMax);
+}, { passive: true });
+document.addEventListener("pointerlockchange", () => {
+  $("hud-hint").classList.toggle("hidden", !!document.pointerLockElement);
+});
+
+// ---------- per frame ----------
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+function updateGame(dt) {
+  const g = G;
+  g.t += dt;
+  const body = g.body;
+
+  // input -> camera relative direction
+  const f = (keys.has("KeyW") || keys.has("ArrowUp") ? 1 : 0) - (keys.has("KeyS") || keys.has("ArrowDown") ? 1 : 0);
+  const r = (keys.has("KeyD") || keys.has("ArrowRight") ? 1 : 0) - (keys.has("KeyA") || keys.has("ArrowLeft") ? 1 : 0);
+  const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw);
+  const rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
+  tmpDir.set(fx * f + rx * r, 0, fz * f + rz * r);
+
+  // noobie player waits in the room until released
+  let inRoom = false;
+  if (g.iAmNoobie && g.spawnIn > 0) {
+    inRoom = true;
+    g.spawnIn = Math.max(0, g.spawnIn - dt);
+    if (g.spawnIn === 0) {
+      const s = slotPos(1);
+      body.teleport(s.x, 0.6, s.z + 1.5);
+      cam.yaw = Math.PI; cam.dist = 9;
+      g.noobieLoose = true; g.looseMsgT = 4;
+      inRoom = false;
+    }
+  }
+  body.step(dt, tmpDir, g.jumpQueued);
+  g.jumpQueued = false;
+  if (body.pos.y < -60) {            // fell out of the world
+    if (g.iAmNoobie && inRoom) body.teleport(CFG.noobieRoom.x, CFG.noobieRoom.y + 0.4, CFG.noobieRoom.z);
+    else { const s = slotPos(0); body.teleport(s.x, 0.6, s.z); }
+  }
+
+  // bot (host or singleplayer only)
+  if (g.bot) {
+    if (g.spawnIn > 0) {
+      g.spawnIn = Math.max(0, g.spawnIn - dt);
+      if (g.spawnIn === 0) {
+        g.bot.body.teleport(CFG.spawn.x, 0.6, CFG.spawn.z + 3);
+        g.noobieLoose = true; g.looseMsgT = 4;
+        g.entities.get("BOT").first = true;
+      }
+    } else {
+      const targets = [];
+      for (const [id, e] of g.entities) {
+        if (id === "BOT") continue;
+        if (g.noobieId && id === g.noobieId) continue;
+        const p = id === g.myId ? body.pos : e.tp;
+        targets.push(p);
+      }
+      g.bot.update(dt, targets);
+    }
+  }
+
+  // visuals
+  const my = g.ent;
+  const anim = !body.grounded ? "jump" : body.moving ? "walk" : "idle";
+  my.set(body.pos.x, body.pos.y, body.pos.z, body.moving ? body.yaw : my.tyaw, anim, true);
+  my.group.position.copy(body.pos);
+  if (g.iAmNoobie) my.group.visible = true;
+  const botEnt = g.entities.get("BOT");
+  if (botEnt && g.bot) {
+    const bb = g.bot.body;
+    const loose = g.spawnIn === 0;
+    botEnt.set(bb.pos.x, bb.pos.y, bb.pos.z, g.bot.dir.lengthSq() > 0 ? bb.yaw : botEnt.tyaw,
+      !bb.grounded ? "jump" : g.bot.dir.lengthSq() > 0 ? "walk" : "idle", loose);
+    botEnt.local = true;
+    botEnt.group.position.copy(bb.pos);
+  }
+  for (const e of g.entities.values()) e.tick(dt);
+
+  // network
+  if (g.online) {
+    g.sendT += dt;
+    if (g.sendT >= 1 / CONFIG.netHz) {
+      g.sendT = 0;
+      if (g.iAmNoobie) {
+        net.sendState({ id: g.myId, role: "noobie", active: !inRoom, spawnIn: g.spawnIn,
+          x: body.pos.x, y: body.pos.y, z: body.pos.z, yaw: my.tyaw, anim });
+      } else {
+        net.sendState({ id: g.myId, role: "survivor", active: true,
+          x: body.pos.x, y: body.pos.y, z: body.pos.z, yaw: my.tyaw, anim });
+      }
+      if (g.bot) {
+        const bb = g.bot.body, moving = g.bot.dir.lengthSq() > 0;
+        net.sendState({ id: "BOT", role: "noobie", active: g.spawnIn === 0, spawnIn: g.spawnIn,
+          x: bb.pos.x, y: bb.pos.y, z: bb.pos.z, yaw: moving ? bb.yaw : botEnt.tyaw,
+          anim: !bb.grounded ? "jump" : moving ? "walk" : "idle" });
+      }
+    }
+  }
+
+  // HUD message
+  g.looseMsgT = Math.max(0, g.looseMsgT - dt);
+  const msg = $("hud-msg");
+  let text = "";
+  if (g.spawnIn > 0) {
+    text = g.iAmNoobie ? `You are the Noobie. Released in ${fmt(g.spawnIn)}` : `Noobie arrives in ${fmt(g.spawnIn)}`;
+  } else if (g.looseMsgT > 0) {
+    text = g.iAmNoobie ? "Hunt them down!" : "Noobie is loose!";
+  }
+  msg.textContent = text;
+  msg.classList.toggle("empty", !text);
+
+  // third person camera with wall pull-in
+  const pivot = new THREE.Vector3(body.pos.x, body.pos.y + body.height * 0.85, body.pos.z);
+  const cp = Math.cos(cam.pitch);
+  const dirv = new THREE.Vector3(Math.sin(cam.yaw) * cp, Math.sin(cam.pitch), Math.cos(cam.yaw) * cp);
+  let d = cam.dist;
+  const hit = g.world.firstAny(pivot, dirv, cam.dist + 0.4);
+  if (hit) d = clamp(hit.distance - 0.4, 0.8, cam.dist);
+  gameCam.position.copy(pivot).addScaledVector(dirv, d);
+  gameCam.lookAt(pivot);
+  const hideSelf = d < 1.6;
+  my.v.group.visible = !hideSelf;
+}
+
+// =====================================================================
+//  LOOP
+// =====================================================================
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  menuCam.aspect = w / h; menuCam.updateProjectionMatrix();
+  gameCam.aspect = w / h; gameCam.updateProjectionMatrix();
+}
+window.addEventListener("resize", resize);
+resize();
+
 const clock = new THREE.Clock();
-let angle = 0;
 const dbg = $("debug");
 if (CONFIG.debug) dbg.style.display = "block";
 
 function tick() {
   const dt = Math.min(clock.getDelta(), 0.1);
-  if (mixer) mixer.update(dt);
-
-  if (ready) {
-    angle += CONFIG.orbitSpeed * dt;
-    mouse.sx += (mouse.x - mouse.sx) * 0.05;
-    mouse.sy += (mouse.y - mouse.sy) * 0.05;
-    const a = angle + mouse.sx * CONFIG.parallax;
-    camera.position.set(
-      center.x + Math.sin(a) * radius,
-      baseHeight - mouse.sy * radius * CONFIG.parallax * 0.5,
-      center.z + Math.cos(a) * radius
-    );
-    camera.lookAt(center);
+  if (G) {
+    try { updateGame(dt); } catch (err) { console.error(err); exitToMenu("Game error, see console."); }
+    if (G) renderer.render(G.scene, gameCam);
+  } else {
+    if (menuMixer) menuMixer.update(dt);
+    if (menuReady) {
+      menuAngle += CONFIG.orbitSpeed * dt;
+      mouse.sx += (mouse.x - mouse.sx) * 0.05;
+      mouse.sy += (mouse.y - mouse.sy) * 0.05;
+      const a = menuAngle + mouse.sx * CONFIG.parallax;
+      menuCam.position.set(
+        menuCenter.x + Math.sin(a) * menuRadius,
+        menuBaseH - mouse.sy * menuRadius * CONFIG.parallax * 0.5,
+        menuCenter.z + Math.cos(a) * menuRadius
+      );
+      menuCam.lookAt(menuCenter);
+    }
+    renderer.render(menuScene, menuCam);
   }
-
-  renderer.render(scene, camera);
-  if (CONFIG.debug) {
-    dbg.textContent = `dt ${(dt * 1000).toFixed(1)}ms\ncalls ${renderer.info.render.calls}\ntris ${renderer.info.render.triangles}`;
-  }
+  if (CONFIG.debug) dbg.textContent = `dt ${(dt * 1000).toFixed(1)}ms\ncalls ${renderer.info.render.calls}\ntris ${renderer.info.render.triangles}`;
   requestAnimationFrame(tick);
 }
 requestAnimationFrame(tick);
+
+// leave the room cleanly if the tab closes
+window.addEventListener("beforeunload", () => { if (net) net.leave(); });
 </script>
 </body>
 </html>
