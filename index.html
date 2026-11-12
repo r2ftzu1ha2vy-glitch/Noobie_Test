@@ -140,8 +140,8 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 //  CORE: tuning, collision world, kinematic body, nav + bot, transport
 // =====================================================================
 const CFG = {
-  survivor: { speed: 12, radius: 1.0,  height: 5.0, stepUp: 1.5 },
-  noobie:   { speed: 9,  radius: 0.75, height: 3.4, stepUp: 1.1 },
+  survivor: { speed: 12, radius: 1.0,  height: 5.0, stepUp: 2.2 },
+  noobie:   { speed: 9,  radius: 0.75, height: 3.4, stepUp: 2.2 },
   gravity: 196.2,
   jumpPower: 50,
   noobieDelay: 30,
@@ -244,7 +244,7 @@ class World {
   slide(b, dx, dz) {
     let rx = dx, rz = dz;
     const R = b.radius;
-    const hs = [b.stepUp + 0.1, b.height * 0.5, b.height - 0.25];
+    const hs = [b.stepUp + 0.1, Math.max(b.height * 0.5, b.stepUp + 0.4), b.height - 0.25];
     const lat = [0, R * 0.75, -R * 0.75];
     for (let it = 0; it < 3; it++) {
       const len = Math.hypot(rx, rz);
@@ -282,7 +282,7 @@ class World {
   // push a body out of anything it overlaps horizontally
   depenetrate(b) {
     const R = b.radius;
-    const hs = [b.stepUp + 0.15, b.height * 0.5];
+    const hs = [b.stepUp + 0.15, Math.max(b.height * 0.5, b.stepUp + 0.4)];
     let px = 0, pz = 0;
     for (const h of hs) {
       for (let i = 0; i < 8; i++) {
@@ -420,7 +420,8 @@ class Nav {
     this.cell = opts.cell || 2;
     this.h = opts.height || 3.4;
     this.r = opts.radius || 0.75;
-    this.stepMax = opts.stepMax || 2.4;
+    this.stepMax = opts.stepMax || 2.8;
+    this.stepUp = opts.stepUp || 2.2;
     this.cache = new Map();
     this.edges = new Map();
   }
@@ -441,7 +442,7 @@ class Nav {
       if (this.w.firstAny(new THREE.Vector3(x, y + 0.05, z), UP, this.h)) continue;
       let ok = true;
       for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const hit = this.w.firstWall(new THREE.Vector3(x, y + this.h * 0.45, z), new THREE.Vector3(dx, 0, dz), this.r * 0.9);
+        const hit = this.w.firstWall(new THREE.Vector3(x, y + Math.max(this.h * 0.45, this.stepUp + 0.3), z), new THREE.Vector3(dx, 0, dz), this.r * 0.9);
         if (hit) { ok = false; break; }
       }
       if (ok) s.push(y);
@@ -487,7 +488,7 @@ class Nav {
       if (bi < 0 || bd > this.stepMax) continue;
       const nb = { cx: n.cx + dx, cz: n.cz + dz, i: bi, y: s[bi] };
       const b = this.pos(nb);
-      if (!this.w.clearLine(a, b, [1.7, this.h * 0.9])) continue;
+      if (!this.w.clearLine(a, b, [this.stepUp + 0.2, Math.max(this.h * 0.9, this.stepUp + 0.5)])) continue;
       e.push(nb);
     }
     this.edges.set(k, e);
@@ -595,7 +596,7 @@ class Bot {
       const dx = t.x - b.pos.x, dz = t.z - b.pos.z;
       const flat = Math.hypot(dx, dz);
       const dy = Math.abs(t.y - b.pos.y);
-      const direct = flat < 14 && dy < 2.2 && this.world.clearLine(b.pos, t, [b.stepUp + 0.2, b.height * 0.6]);
+      const direct = flat < 14 && dy < 2.6 && this.world.clearLine(b.pos, t, [b.stepUp + 0.2, Math.max(b.height * 0.6, b.stepUp + 0.5)]);
       if (direct) {
         this.path = null; this.search = null;
         if (flat > 0.6) this.dir.set(dx / flat, 0, dz / flat);
@@ -614,7 +615,7 @@ class Bot {
         if (this.path) {
           while (this.pi < this.path.length - 1 && Math.hypot(this.path[this.pi].x - b.pos.x, this.path[this.pi].z - b.pos.z) < 0.9) this.pi++;
           if (this.pi + 1 < this.path.length && Math.abs(this.path[this.pi + 1].y - b.pos.y) < 1.5 &&
-              this.world.clearLine(b.pos, this.path[this.pi + 1], [b.stepUp + 0.2, b.height * 0.6])) this.pi++;
+              this.world.clearLine(b.pos, this.path[this.pi + 1], [b.stepUp + 0.2, Math.max(b.height * 0.6, b.stepUp + 0.5)])) this.pi++;
           const w = this.path[this.pi];
           const wx = w.x - b.pos.x, wz = w.z - b.pos.z, wl = Math.hypot(wx, wz);
           if (wl > 0.3) this.dir.set(wx / wl, 0, wz / wl);
@@ -1029,6 +1030,8 @@ const CONFIG = {
   houseModel: "./House_Map.glb",
   roomModel: "./Noobie_Room.glb",
   noobieModel: "./Noobie.glb",
+  playerModel: "./NoobiePlayer.glb",
+  survivorTint: true,   // colour the player torso with their lobby colour
   menuCameraName: "Camera", menuCamParallax: 0, // parallax: 0 = locked to the model's Camera
   orbitSpeed: 0.04, orbitRadiusScale: 1.6, cameraHeightScale: 0.35, parallax: 0.15,
   fov: 55, exposure: 1.1,
@@ -1329,19 +1332,20 @@ let assets = null;
 async function ensureGameAssets() {
   if (assets) return assets;
   showLoader("Loading map...");
-  const prog = [0, 0, 0];
+  const prog = [0, 0, 0, 0];
   const upd = (i) => (evt) => {
     if (evt.lengthComputable) prog[i] = evt.loaded / evt.total;
-    $("bar").firstElementChild.style.width = `${((prog[0] + prog[1] + prog[2]) / 3) * 100}%`;
+    $("bar").firstElementChild.style.width = `${((prog[0] + prog[1] + prog[2] + prog[3]) / 4) * 100}%`;
   };
-  const [house, room, noobie] = await Promise.all([
+  const [house, room, noobie, player] = await Promise.all([
     loadGLB(CONFIG.houseModel, upd(0)),
     loadGLB(CONFIG.roomModel, upd(1)),
     loadGLB(CONFIG.noobieModel, upd(2)),
+    loadGLB(CONFIG.playerModel, upd(3)).catch((err) => { console.error("Player model failed, using boxes:", err); return null; }),
   ]);
   restoreMatrices(house);
   restoreMatrices(room);
-  assets = { house, room, noobie };
+  assets = { house, room, noobie, player };
   return assets;
 }
 
@@ -1387,11 +1391,16 @@ function makeSurvivorVisual(colorHex) {
   };
 }
 
-function makeNoobieVisual(gltf) {
+function makeNoobieVisual(gltf, height = CFG.noobie.height, tint = null) {
   const model = gltf.scene.clone(true);
+  if (tint) {
+    model.traverse((o) => {
+      if (o.isMesh && o.name === "Torso") { o.material = o.material.clone(); o.material.color.set(tint); }
+    });
+  }
   model.updateMatrixWorld(true);
   const box = new THREE.Box3().setFromObject(model);
-  const s = CFG.noobie.height / ((box.max.y - box.min.y) || 1);
+  const s = height / ((box.max.y - box.min.y) || 1);
   model.scale.setScalar(s);
   model.position.y = -box.min.y * s;
   const wrap = new THREE.Group();
@@ -1401,7 +1410,7 @@ function makeNoobieVisual(gltf) {
   for (const c of gltf.animations) actions[c.name.toLowerCase()] = mixer.clipAction(c);
   let cur = null, curAct = null;
   const api = {
-    group: wrap, height: CFG.noobie.height,
+    group: wrap, height,
     play(n) {
       if (cur === n) return;
       const next = actions[n] || actions.idle;
@@ -1643,7 +1652,9 @@ function buildSession(payload, a) {
 
   // entities for everyone
   const mkEntity = (id, isNoobie, label, color) => {
-    const vis = isNoobie ? makeNoobieVisual(a.noobie) : makeSurvivorVisual(color);
+    const vis = isNoobie ? makeNoobieVisual(a.noobie)
+      : a.player ? makeNoobieVisual(a.player, CFG.survivor.height, CONFIG.survivorTint ? color : null)
+      : makeSurvivorVisual(color);
     const e = new Entity(id, vis, label);
     scene.add(e.group);
     G.entities.set(id, e);
@@ -1666,7 +1677,7 @@ function buildSession(payload, a) {
   G.ent.local = true;
 
   if (botController) {
-    G.bot = new Bot(world, new Nav(world, { height: CFG.noobie.height, radius: CFG.noobie.radius }));
+    G.bot = new Bot(world, new Nav(world, { height: CFG.noobie.height, radius: CFG.noobie.radius, stepUp: CFG.noobie.stepUp }));
   }
 
   // camera
